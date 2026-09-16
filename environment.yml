@@ -1,0 +1,7 @@
+name: infomair
+channels:
+  - conda-forge
+dependencies:
+  - pip
+  - python=3.12
+  
