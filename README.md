@@ -16,6 +16,12 @@ Activate the environment:
 mamba activate infomair
 ```
 
+If that doesn't work you might need to allow the console to run mamba commands with 
+
+```bash
+mamba shell init --shell powershell --root-prefix=~/.local/share/mamba
+```
+
 To deactivate the environment:
 
 ```bash
