@@ -8,13 +8,12 @@ UNK_TOKEN = '<UNK>'
 
 
 def tokenize(dialog_acts: List[Tuple[str, str]]):
-
-
     # Transpose dialog acts so we get <classes, phrases> (y, X; but in text still)
     classes, phrases = list(zip(*dialog_acts))
 
     cv = CountVectorizer()
-    cv.fit_transform(raw_documents=phrases, y=classes)
+    vector = cv.fit_transform(raw_documents=phrases, y=classes)
+    print(vector)
 
 
 if __name__ == '__main__':
