@@ -34,6 +34,26 @@ def read_text_file_lines(file_path: str) -> List[str]:
     return lines
     
 
+def sanitize_and_split_phrase(phrase: str, 
+                    do_lower: bool = True, 
+                    remove_apostraphes: bool = True) -> List[str]:
+
+    # Check for str type
+    if not isinstance(phrase, str):
+        raise ValueError(f"Line #{idx} in `dat_lines` is type `{type(phrase)}` where it should be `str`")
+
+    if remove_apostraphes:
+        phrase = phrase.replace("'", '')
+
+    if do_lower:
+        # Better form of lowering for making text uniform.
+        phrase = phrase.casefold()  
+
+    # Split the phrase, and remove if no space
+    split_phrase: List[str] = phrase.split(' ')
+    return split_phrase
+
+
 def parse_dstc_dat_file(dat_lines: List[str], 
                         do_lower: bool = True, 
                         remove_apostraphes: bool = True,
@@ -53,19 +73,9 @@ def parse_dstc_dat_file(dat_lines: List[str],
     pairs: List[Tuple[str, str]] = []
 
     for idx, phrase in enumerate(dat_lines):
-        # Check for str type
-        if not isinstance(phrase, str):
-            raise ValueError(f"Line #{idx} in `dat_lines` is type `{type(phrase)}` where it should be `str`")
-
-        if remove_apostraphes:
-            phrase = phrase.replace("'", '')
-
-        if do_lower:
-            # Better form of lowering for making text uniform.
-            phrase = phrase.casefold()  
-
-        # Split the phrase, and remove if no space
-        split_phrase: List[str] = phrase.split(' ')
+        split_phrase = sanitize_and_split_phrase(phrase=phrase, 
+                                                 do_lower=do_lower, 
+                                                 remove_apostraphes=remove_apostraphes)
         if len(split_phrase) < 2:
             if verbose:
                 print(f'Line #{idx} is not in the correct format ("CLASS [SPACE] UTTERANCE"): {phrase}')
