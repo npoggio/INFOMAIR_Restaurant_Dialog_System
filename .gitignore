@@ -221,3 +221,4 @@ __marimo__/
 *.csv
 *.dat
 .vscode/settings.json
+*.joblib
