@@ -72,18 +72,23 @@ def parse_dstc_dat_file(dat_lines: List[str],
     pairs: List[Tuple[str, str]] = []
 
     for idx, phrase in enumerate(dat_lines):
+        # Some files have a trailing empty line, we don't want to give a warning for that
+        if (idx == len(dat_lines) - 1) and (phrase == ''):
+            continue
+
         sanitized_phrase = sanitize_phrase(phrase=phrase, 
                                            do_lower=do_lower, 
                                            remove_apostraphes=remove_apostraphes)
         split_phrase = sanitized_phrase.split(' ', maxsplit=1)
         
         if len(split_phrase) < 2:
-            if verbose:
+            # Verbose, but not trailing whitespace
+            if verbose and not ((idx == len(dat_lines) - 1) and (phrase == '')):
                 print(f'Line #{idx} is not in the correct format ("CLASS [SPACE] UTTERANCE"): {phrase}')
             continue  # Skip a cycle
 
         # (First), (Second -> Last)
-        classified_phrase: List[Tuple[str, str]] = split_phrase[0], split_phrase[1]
+        classified_phrase: Tuple[str, str] = split_phrase[0], split_phrase[1]
         pairs.append(classified_phrase)
         
     return pairs        
