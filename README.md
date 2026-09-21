@@ -16,6 +16,12 @@ Activate the environment:
 mamba activate infomair
 ```
 
+If that doesn't work you might need to allow the console to run mamba commands with 
+
+```bash
+mamba shell init --shell powershell --root-prefix=~/.local/share/mamba
+```
+
 To deactivate the environment:
 
 ```bash
@@ -38,3 +44,11 @@ After pulling an updated `environment.yml`, update your existing environment wit
 ```bash
 mamba env update -f environment.yml
 ```
+
+## Data Insertion
+
+The `dailog_acts.dat` file can be downloaded from [Brightspace](https://uu.brightspace.com/d2l/le/lessons/121884/topics/693121) and put into the [`data/`](data/) folder. 
+
+__***NOTE!!!***__
+The file is to be __RENAMED__ to `dialog_acts.dat` to fix a typo in the original file name. Make sure to rename it before putting it in the `data/` folder.
+
