@@ -2,7 +2,7 @@
 import os
 from typing import List, Tuple, Dict, Iterable, Callable, Any
 import joblib
-import parser
+from . import parser
 import numpy as np
 from scipy.sparse import spmatrix
 from sklearn.feature_extraction.text import CountVectorizer

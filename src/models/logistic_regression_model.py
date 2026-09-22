@@ -7,20 +7,18 @@ from sklearn.metrics import (
     balanced_accuracy_score,
     classification_report,
 )
-from sklearn.model_selection import train_test_split
 
-import parser
-from document_term import (
+from src.utils import parser
+from src.utils.data_split import split_data
+from src.utils.document_term import (
     MODEL_FILES_DIRECTORY,
     fit_count_vectorizer,
     get_embeddings,
     transpose_dialog_acts,
 )
 
-
-DATA_PATH = "src/dialog_acts.dat"
+DATA_PATH = "data/dialog_acts.dat"
 MODEL_NAME = "logistic_regression_bow.joblib"
-TEST_SIZE = 0.15
 RANDOM_STATE = 12345
 
 
@@ -32,30 +30,29 @@ def train_logistic_regression():
     # Separate utterances and labels
     phrases, classes = transpose_dialog_acts(dialog_acts)
 
-    # Split raw text into 85% training and 15% testing
-    X_train_text, X_test_text, y_train, y_test = train_test_split(
-        phrases,
-        classes,
-        test_size=TEST_SIZE,
-        random_state=RANDOM_STATE,
-        stratify=classes,
+    # Split the raw text into training and testing data
+    data = split_data(
+        X=phrases,
+        y=classes,
+        test_size=0.15,
+        random_state=RANDOM_STATE
     )
 
     # Learn the bag-of-words vocabulary from training text only
     vectorizer = fit_count_vectorizer(
-        dialog_phrases=X_train_text,
-        dialog_classes=y_train,
+        dialog_phrases=data.X_train,
+        dialog_classes=data.y_train,
     )
 
     # Convert raw text into numerical feature vectors
     X_train = get_embeddings(
         count_vectorizer=vectorizer,
-        texts=list(X_train_text),
+        texts=list(data.X_train),
     )
 
     X_test = get_embeddings(
         count_vectorizer=vectorizer,
-        texts=list(X_test_text),
+        texts=list(data.X_test),
     )
 
     # Create and train Logistic Regression
@@ -65,24 +62,24 @@ def train_logistic_regression():
         random_state=RANDOM_STATE,
     )
 
-    classifier.fit(X_train, y_train)
+    classifier.fit(X_train, data.y_train)
 
-    # Evaluate it
+    # Evaluate the model
     predictions = classifier.predict(X_test)
 
     print(
         "Accuracy:",
-        accuracy_score(y_test, predictions),
+        accuracy_score(data.y_test, predictions),
     )
 
     print(
         "Balanced accuracy:",
-        balanced_accuracy_score(y_test, predictions),
+        balanced_accuracy_score(data.y_test, predictions),
     )
 
     print(
         classification_report(
-            y_test,
+            data.y_test,
             predictions,
             zero_division=0,
         )
