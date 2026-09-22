@@ -2,7 +2,7 @@
 import os
 from typing import List, Tuple, Dict, Iterable, Callable, Any
 import joblib
-import parser
+from . import parser
 import numpy as np
 from scipy.sparse import spmatrix
 from sklearn.feature_extraction.text import CountVectorizer
@@ -49,8 +49,8 @@ def fit_count_vectorizer(dialog_phrases: Tuple[str, ...], dialog_classes: Tuple[
     :raises ValueError: When `dialog_phrases` and `dialog_classes` do not have the same length.
     """
 
-    if len(dialog_phrases) != len(dialog_phrases):
-        raise ValueError("`dialog_phrases` and `dialog_phrases` must have the same length.")
+    if len(dialog_phrases) != len(dialog_classes):
+        raise ValueError("`dialog_phrases` and `dialog_classes` must have the same length.")
 
     count_vec_kwargs: Dict[str, Any] = { 'token_pattern': TOKEN_PATTERN }
     count_vec: CountVectorizer = CountVectorizer(**count_vec_kwargs) # type: ignore
