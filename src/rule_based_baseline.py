@@ -1,6 +1,6 @@
 import re
 
-from .utils.dialog_act import DialogAct
+from utils.dialog_act import DialogAct
 
 
 RULES = {
