@@ -18,11 +18,11 @@ from src.utils.document_term import (
 )
 
 DATA_PATH = "data/dialog_acts.dat"
-MODEL_NAME = "state_vector_machine_bow.joblib"
+MODEL_NAME = "support_vector_machine_bow.joblib"
 RANDOM_STATE = 12345
 
 
-def state_vector_machine():
+def support_vector_machine():
     # Read and parse the dataset
     lines = parser.read_text_file_lines(DATA_PATH)
     dialog_acts = parser.parse_dstc_dat_file(lines)
@@ -112,4 +112,4 @@ def state_vector_machine():
 
 
 if __name__ == "__main__":
-    state_vector_machine()
+    support_vector_machine()
