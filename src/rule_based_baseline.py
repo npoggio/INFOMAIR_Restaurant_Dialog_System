@@ -1,6 +1,6 @@
 import re
 
-from .dialog_act import DialogAct
+from utils.dialog_act import DialogAct
 
 
 RULES = {
@@ -34,6 +34,7 @@ RULES = {
         "vegan",
         "seafood",
     ),
+    #TODO: Add more rules for the remaining dialog acts
 }
 
 def contains_keyword(text: str, keyword: str) -> bool:
@@ -50,3 +51,14 @@ def classify_dialog_act(utterance: str) -> DialogAct:
                 return dialog_act
 
     return DialogAct.NULL #Default
+
+if __name__ == "__main__":
+    while True:
+        utterance = input("Enter an utterance (or 'quit' to stop): ")
+
+        if utterance.lower().strip() == "quit":
+            break
+
+        prediction = classify_dialog_act(utterance)
+
+        print(f"Predicted dialog act: {prediction.value}")
