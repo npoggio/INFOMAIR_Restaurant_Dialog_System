@@ -68,7 +68,7 @@ This is a list of all the models that can be trained, with example commands.
 
 \**Note that SVM is Support Vector Machine with a Linear Kernel*
 
-The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file.
+The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file. The `-m` flag specifies the model to train, and the `-g` flag can be used to specify wether to use a group split to ensure that all phrases from the same conversation are in the same split. The default is to use a random split. 
 
 ### Running
 
@@ -91,4 +91,13 @@ Alternatively, you can pass a file with phrases to the model, and it will return
 ```bash
 python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/example_phrases.txt
 > ['hello', 'inform']
+```
+
+Lastly, you can also have an interactive console where you can type in phrases and get predictions for each phrase. The console will exit when you type `exit` or `quit`. 
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow --interactive
+> Interactive svm_bow UI. type QUIT to exit
+> You: What is the best Italian restaurant near me?
+> ['inform']
 ```

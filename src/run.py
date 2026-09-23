@@ -7,7 +7,7 @@ import src.models.rule_based_baseline as rb
 import src.utils.parser as parser
 import src.utils.document_term as document_term
 from src.enums.models import Models
-from src import PROGRAM, DESCRIPTION, MODEL_NAMES, MODEL_RUNNING
+from src import PROGRAM, DESCRIPTION, MODEL_NAMES, MODEL_RUNNING, DO_LOWER, REMOVE_APOSTRAPHES
 
 ALLOWED_MODELS = list(MODEL_NAMES.keys())
 
@@ -27,6 +27,8 @@ def run_arg_parser() -> Dict[str, Any]:
                         type=str, nargs='+', help='Phrases to test surrounded with ""')
     parser.add_argument('-d', '--data_path', 
                         type=str, help="The path to a .dat or .txt file to run")
+    parser.add_argument('--interactive', 
+                        action='store_true', help="Enable flexable inputs")
 
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
@@ -44,6 +46,8 @@ def run_file(model: Models, input_path: str, data_path: str, **kwargs):
         phrases, classes = document_term.transpose_dialog_acts(dialog_acts)
     else:
         phrases = lines
+
+    phrases = [parser.sanitize_phrase(phrase) for phrase in phrases]
     running_kwargs = {
         'model_path': input_path,
         'phrases': phrases,
@@ -53,6 +57,8 @@ def run_file(model: Models, input_path: str, data_path: str, **kwargs):
 
 def run_str(model: Models, input_path: str, phrases: list, **kwargs):
     running_func = MODEL_RUNNING[model]
+    
+
     running_kwargs = {
         'model_path': input_path,
         'phrases': phrases,
@@ -66,6 +72,7 @@ if __name__ == '__main__':
 
     has_phrases = kwargs['phrases'] is not None
     has_data_path = kwargs['data_path'] is not None
+    interactive = kwargs['interactive']
 
     model_name = kwargs['model']
     input_path = kwargs['input_path']
@@ -75,11 +82,23 @@ if __name__ == '__main__':
     kwargs['model'] = MODEL_NAMES[model_name]
     kwargs['input_path'] = input_path
 
-    if has_phrases and not has_data_path:
-        out = run_str(**kwargs)
-    elif has_data_path and not has_phrases:
-        out = run_file(**kwargs)
-    else:
-        raise ValueError("You mast pass either `--phrases` or `--data_path`. Not both, nor neither")
+    if not interactive:
+        if has_phrases and not has_data_path:
+            out = run_str(**kwargs)
+        elif has_data_path and not has_phrases:
+            out = run_file(**kwargs)
+        else:
+            raise ValueError("You mast pass either `--phrases` or `--data_path`. Not both, nor neither")
 
-    print(out)
+        print(out)
+    else:
+        print(f'Interactive {model_name} UI. type QUIT to exit')
+        while True:
+            user_input = input("You: ")
+
+            if user_input == 'QUIT':
+                break
+
+            kwargs['phrases'] = [user_input]
+            out = run_str(**kwargs)
+            print(out)

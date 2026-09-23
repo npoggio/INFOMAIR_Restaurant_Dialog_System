@@ -45,3 +45,7 @@ MODEL_RUNNING = {
         #lambda kwargs: lr.run_logistic_regression(**kwargs, embed_func=get_bert),
         lambda kwargs: (_ for _ in ()).throw(NotImplementedError()),  # <-- cursed but temp
 }
+
+# General sanitization settings
+DO_LOWER = True
+REMOVE_APOSTRAPHES = True

@@ -1,6 +1,7 @@
 import re
 
 from src.enums.dialog_act import DialogAct
+from src.utils.parser import sanitize_phrase
 
 
 RULES = {
@@ -43,7 +44,11 @@ def contains_keyword(text: str, keyword: str) -> bool:
 
 
 def classify_dialog_act(utterance: str) -> DialogAct:
-    text = utterance.lower().strip()
+    # Avoid circular import
+    from src import DO_LOWER, REMOVE_APOSTRAPHES
+
+    #text = utterance.lower().strip()
+    text = sanitize_phrase(utterance, DO_LOWER, REMOVE_APOSTRAPHES)
 
     for dialog_act, keywords in RULES.items():
         for keyword in keywords:
