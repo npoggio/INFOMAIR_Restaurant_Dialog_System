@@ -102,8 +102,6 @@ if __name__ == '__main__':
     dat_lines: List[str] = read_text_file_lines(file_path=file_path)
     print(*dat_lines[:n_lines], sep='\n')
 
-    do_lower: bool = True
-    remove_apostrophes: bool = True
     verbose: bool = True
-    parsed_dat_file = parse_dstc_dat_file(dat_lines=dat_lines, do_lower=do_lower)
+    parsed_dat_file = parse_dstc_dat_file(dat_lines=dat_lines)
     print(*parsed_dat_file[:n_lines], sep='\n')
