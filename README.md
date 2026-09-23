@@ -52,3 +52,19 @@ The `dailog_acts.dat` file can be downloaded from [Brightspace](https://uu.brigh
 __***NOTE!!!***__
 The file is to be __RENAMED__ to `dialog_acts.dat` to fix a typo in the original file name. Make sure to rename it before putting it in the `data/` folder.
 
+## Usage
+
+### Training
+
+There are two models that can be trained, the SVM and the LR models. Both have options for BERT and Bag of Words (BoW) features.
+
+This is a list of all the models that can be trained, with example commands. 
+
+| Model | Command | Embedding |
+|-------|---------|-----------|
+| Support Vector with BoW | `python -m src.train -m svm_bow -r 12345 -i data/dialog_acts.dat -o model_files/svm_bow` | Bag of Words |
+| Support Vector with BERT | `python -m src.train -m svm_bert -r 12345 -i data/dialog_acts.dat -o model_files/svm_bert` | BERT |
+| Logistic Regression with BoW | `python -m src.train -m lr_bow -r 12345 -i data/dialog_acts.dat -o model_files/lr_bow` | Bag of Words |
+| Logistic Regression with BERT | `python -m src.train -m lr_bert -r 12345 -i data/dialog_acts.dat -o model_files/lr_bert` | BERT |
+
+\**Note that SVM is Support Vector Machine with a Linear Kernel*

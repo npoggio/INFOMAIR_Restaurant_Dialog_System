@@ -11,8 +11,8 @@ MODEL_NAMES = {
     'rb': Models.RULE_BASED,
     'svm_bow': Models.SUPPORT_VECTOR_MACHINE_BOW,
     'lr_bow': Models.LOGISTIC_REGRESSION_BOW,
-    'svm_trans': Models.SUPPORT_VECTOR_MACHINE_BERT,
-    'lr_trans': Models.LOGISTIC_REGRESSION_BERT,
+    'svm_bert': Models.SUPPORT_VECTOR_MACHINE_BERT,
+    'lr_bert': Models.LOGISTIC_REGRESSION_BERT,
 }
 
 MODELS_TRAINING = {
@@ -23,7 +23,9 @@ MODELS_TRAINING = {
     Models.LOGISTIC_REGRESSION_BOW: 
         lambda kwargs: lr.train_logistic_regression(**kwargs, embed_func=get_embeddings),
     Models.SUPPORT_VECTOR_MACHINE_BERT:                                    # TODO: CHANGE TO BERT!
-        lambda kwargs: svm.train_support_vector_machine(**kwargs, embed_func=get_embeddings),
+        #lambda kwargs: svm.train_support_vector_machine(**kwargs, embed_func=get_bert),
+        lambda kwargs: (_ for _ in ()).throw(NotImplementedError()),  # <-- cursed but temp
     Models.LOGISTIC_REGRESSION_BERT:                                   # TODO: CHANGE TO BERT!
-        lambda kwargs: lr.train_logistic_regression(**kwargs, embed_func=get_embeddings),
+        #lambda kwargs: lr.train_logistic_regression(**kwargs, embed_func=get_bert),
+        lambda kwargs: (_ for _ in ()).throw(NotImplementedError()),  # <-- cursed but temp
 }
