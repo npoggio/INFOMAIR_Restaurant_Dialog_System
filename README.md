@@ -52,3 +52,52 @@ The `dailog_acts.dat` file can be downloaded from [Brightspace](https://uu.brigh
 __***NOTE!!!***__
 The file is to be __RENAMED__ to `dialog_acts.dat` to fix a typo in the original file name. Make sure to rename it before putting it in the `data/` folder.
 
+## Usage
+
+### Training
+
+There are two models that can be trained, the SVM and the LR models. Both have options for BERT and Bag of Words (BoW) features.
+This is a list of all the models that can be trained, with example commands. 
+
+| Model | Command | Embedding |
+|-------|---------|-----------|
+| Support Vector with BoW | `python -m src.train -m svm_bow -r 12345 -i data/dialog_acts.dat -o model_files/svm_bow` | Bag of Words |
+| Support Vector with BERT | `python -m src.train -m svm_bert -r 12345 -i data/dialog_acts.dat -o model_files/svm_bert` | BERT |
+| Logistic Regression with BoW | `python -m src.train -m lr_bow -r 12345 -i data/dialog_acts.dat -o model_files/lr_bow` | Bag of Words |
+| Logistic Regression with BERT | `python -m src.train -m lr_bert -r 12345 -i data/dialog_acts.dat -o model_files/lr_bert` | BERT |
+
+\**Note that SVM is Support Vector Machine with a Linear Kernel*
+
+The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file. The `-m` flag specifies the model to train, and the `-g` flag can be used to specify wether to use a group split to ensure that all phrases from the same conversation are in the same split. The default is to use a random split. 
+
+### Running
+
+You can use the models with your phrases by running the following command, where the `-m` flag specifies the model to use (like above), the `-i` flag specifies the input model file, and the `-p` flag specifies the phrase to predict. The output will be a list of predictions for each phrase.
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best Italian place in my neighbourhood?"
+> ['request']
+```
+
+You can also pass multiple sentences to the model, and it will return a list of predictions for each sentence.
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best Italian place in my neighbourhood?" "Thank you Goodbye :)"
+> ['request' 'thankyou']
+```
+
+Alternatively, you can pass a file with phrases to the model, and it will return a list of predictions for each phrase in the file. The input file should be a .txt file with one phrase per line. Or a .dat file, which can be evaluated too. 
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/example_phrases.txt
+> ['hello', 'inform']
+```
+
+Lastly, you can also have an interactive console where you can type in phrases and get predictions for each phrase. The console will exit when you type `exit` or `quit`. 
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow --interactive
+> Interactive svm_bow UI. type QUIT to exit
+> You: What is the best Italian restaurant near me?
+> ['inform']
+```
