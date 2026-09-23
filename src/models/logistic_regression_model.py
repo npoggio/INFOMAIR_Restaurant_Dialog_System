@@ -9,7 +9,7 @@ from sklearn.metrics import (
 )
 
 from src.utils import parser
-from src.utils.data_split import split_data
+from src.utils.data_split import split_data # copt this
 from src.utils.document_term import (
     MODEL_FILES_DIRECTORY,
     fit_count_vectorizer,
@@ -19,7 +19,7 @@ from src.utils.document_term import (
 
 DATA_PATH = "data/dialog_acts.dat"
 MODEL_NAME = "logistic_regression_bow.joblib"
-RANDOM_STATE = 12345
+RANDOM_STATE = 12345 # copy this
 
 
 def train_logistic_regression():
@@ -31,7 +31,7 @@ def train_logistic_regression():
     phrases, classes = transpose_dialog_acts(dialog_acts)
 
     # Split the raw text into training and testing data
-    data = split_data(
+    data = split_data( # copy this
         X=phrases,
         y=classes,
         test_size=0.15,

@@ -1,15 +1,114 @@
 import re
 
 from utils.dialog_act import DialogAct
+from src.utils import parser
+from src.utils.data_split import split_data
+from src.utils.document_term import transpose_dialog_acts
+from sklearn.metrics import accuracy_score
 
+DATA_PATH = "data/dialog_acts.dat"
+RANDOM_STATE = 12345
+
+#TODO: get a more expansive list of cuisine types
+CUISINES = (
+    "italian",
+    "chinese",
+    "indian",
+    "mexican",
+    "vietnamese",
+    "thai",
+    "japanese",
+    "korean",
+    "spanish",
+    "british",
+    "greek",
+    "turkish",
+    "mediterranean",
+    "scottish",
+    "european",
+    "hindi",
+    "asian",
+    "english"
+)
 
 RULES = {
-    DialogAct.BYE: ("see you", "goodbye", "good bye", "bye"),
-    DialogAct.HELLO: ("hi", "hello", "good morning", "good evening"),
-    DialogAct.DENY: ("wrong", "no", "not", "don't", "change"),
-    DialogAct.AFFIRM: ("yes", "right", "yeah", "yea", "correct"),
-    DialogAct.CONFIRM: ("is it", "does it", "what is", "do they"),
-    DialogAct.ACK: ("okay", "good", "kay", "that'll do", "fine", "ok"),
+    DialogAct.RESTART: (
+        "restart",
+        "start over",
+        "start again",
+        "reset"
+    ),
+    DialogAct.REQALTS: (
+        "how about", 
+        "next", 
+        "anything else", 
+        "different", 
+        "what else", 
+        "other", 
+        "another", 
+        "what about"
+    ),
+    DialogAct.THANKYOU: (
+        "thank you",
+        "thank"
+    ),
+    DialogAct.DENY: (
+        "wrong",  
+        "i dont want", 
+        "change"
+    ),
+    DialogAct.NEGATE: (
+        "no", #TODO decide whats the smartest thing to do with 'dont' and 'not' (also in other categories)
+        "not"
+    ), 
+    DialogAct.REPEAT: (
+        "repeat", 
+        "again", 
+        "back"
+    ),
+     DialogAct.REQUEST: (
+        "what is", 
+        "address", 
+        "phone number", 
+        "price range", 
+        "post code", 
+        "type (of food)", #TODO decide how to formulate this 
+    ),
+     DialogAct.CONFIRM: (
+        "is it", 
+        "does it",
+        "do they"
+    ),
+    DialogAct.REQMORE: (
+        "more"
+    ),
+    DialogAct.AFFIRM: (
+        "yes", 
+        "right", 
+        "yeah", 
+        "yea", 
+        "correct"
+    ),
+    DialogAct.ACK: (
+        "okay", 
+        "good", 
+        "kay", 
+        "thatll do", 
+        "fine", 
+        "ok"
+    ),
+    DialogAct.HELLO: (
+        "hi", 
+        "hello", 
+        "good morning", 
+        "good evening"
+    ),
+    DialogAct.BYE: (
+        "see you", 
+        "goodbye", 
+        "good bye", 
+        "bye"
+    ),
     DialogAct.INFORM: (
         "looking",
         "need",
@@ -19,22 +118,25 @@ RULES = {
         "west",
         "east",
         "south",
-        "food",
-        "italian",
-        "chinese",
-        "indian", # TODO: get a more expansive list of cuisine types
+        "food", 
         "expensive",
         "cheap",
         "price",
         "priced",
         "care",
         "serve",
+        "serves",
+        "serving",
         "kosher",
         "vegetarian",
         "vegan",
         "seafood",
-    ),
-    #TODO: Add more rules for the remaining dialog acts
+        "town",
+        "center",
+        "i dont care",
+        "gastropub"
+    ) + CUISINES,
+
 }
 
 def contains_keyword(text: str, keyword: str) -> bool:
@@ -53,6 +155,7 @@ def classify_dialog_act(utterance: str) -> DialogAct:
     return DialogAct.NULL #Default
 
 if __name__ == "__main__":
+
     while True:
         utterance = input("Enter an utterance (or 'quit' to stop): ")
 
@@ -62,3 +165,30 @@ if __name__ == "__main__":
         prediction = classify_dialog_act(utterance)
 
         print(f"Predicted dialog act: {prediction.value}")
+
+def evaluate_rulebase():
+    # Read and parse the dataset
+    lines = parser.read_text_file_lines(DATA_PATH)
+    dialog_acts = parser.parse_dstc_dat_file(lines)
+
+    # Separate utterances and labels
+    phrases, classes = transpose_dialog_acts(dialog_acts)
+
+    # Split the raw text into training and testing data
+    data = split_data( # copy this
+        X=phrases,
+        y=classes,
+        test_size=0.15,
+        random_state=RANDOM_STATE
+    )
+
+    predictions = []
+
+    for utterance in data.X_test:
+        prediction = classify_dialog_act(utterance)
+        predictions.append(prediction)
+    
+    print(
+        "Accuracy:",
+        accuracy_score(data.y_test, predictions),
+    )
