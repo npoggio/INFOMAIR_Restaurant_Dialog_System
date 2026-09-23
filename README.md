@@ -68,7 +68,7 @@ This is a list of all the models that can be trained, with example commands.
 
 \**Note that SVM is Support Vector Machine with a Linear Kernel*
 
-The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file. The `-m` flag specifies the model to train, and the `-g` flag can be used to specify wether to use a group split to ensure that all phrases from the same conversation are in the same split. The default is to use a random split. 
+The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file. The `-m` flag specifies the model to train, and the `-g` flag can be used to specify whether to use a grouped split, which ensures that all duplicates of an utterance end up in the same split so no identical utterances leak between train and test. The default is a random split. Both splits are stratified by class. 
 
 ### Running
 
