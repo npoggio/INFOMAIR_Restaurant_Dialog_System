@@ -1,3 +1,4 @@
+from typing import Optional
 from transformers import DistilBertTokenizer, DistilBertModel
 from sklearn.feature_extraction.text import CountVectorizer
 from typing import List
@@ -5,12 +6,15 @@ from typing import List
 import numpy as np
 import torch
 
+
 tokenizer = DistilBertTokenizer.from_pretrained(
-    "distilbert-base-uncased"
+    "distilbert-base-uncased",
+    cache_dir='model_files/bert_cache/'
 )
 
 model = DistilBertModel.from_pretrained(
-    "distilbert-base-uncased"
+    "distilbert-base-uncased",
+    cache_dir='model_files/bert_cache/'
 )
 
 # Do not use dropout while creating embeddings.
@@ -18,7 +22,7 @@ model.eval()
 
 
 def get_distilbert_embeddings(
-    count_vectorizer: CountVectorizer,
+    count_vectorizer: Optional[CountVectorizer],
     texts: List[str],
 ) -> np.ndarray:
     """
@@ -52,3 +56,7 @@ def get_distilbert_embeddings(
     embeddings = output.last_hidden_state[:, 0, :]
 
     return embeddings.numpy()
+
+
+if __name__ == '__main__':
+    print(get_distilbert_embeddings(None, texts=['Hello', 'how are you?']))

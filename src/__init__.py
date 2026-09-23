@@ -3,6 +3,7 @@ from .models import support_vector_machine_model as svm
 from .models import logistic_regression_model as lr
 from .models import rule_based_baseline as rb
 from .utils.document_term import get_embeddings
+from .utils.distilbert_embeddings import get_distilbert_embeddings
 
 PROGRAM = 'Restaurant Dialog System'
 DESCRIPTION = '''A dialog system for choosing a restaurant.
@@ -23,12 +24,10 @@ MODELS_TRAINING = {
         lambda kwargs: svm.train_support_vector_machine(**kwargs, embed_func=get_embeddings),
     Models.LOGISTIC_REGRESSION_BOW: 
         lambda kwargs: lr.train_logistic_regression(**kwargs, embed_func=get_embeddings),
-    Models.SUPPORT_VECTOR_MACHINE_BERT:                                    # TODO: CHANGE TO BERT!
-        #lambda kwargs: svm.train_support_vector_machine(**kwargs, embed_func=get_bert),
-        lambda kwargs: (_ for _ in ()).throw(NotImplementedError()),  # <-- cursed but temp
-    Models.LOGISTIC_REGRESSION_BERT:                                   # TODO: CHANGE TO BERT!
-        #lambda kwargs: lr.train_logistic_regression(**kwargs, embed_func=get_bert),
-        lambda kwargs: (_ for _ in ()).throw(NotImplementedError()),  # <-- cursed but temp
+    Models.SUPPORT_VECTOR_MACHINE_BERT:                                    
+        lambda kwargs: svm.train_support_vector_machine(**kwargs, embed_func=get_distilbert_embeddings),
+    Models.LOGISTIC_REGRESSION_BERT:                                   
+        lambda kwargs: lr.train_logistic_regression(**kwargs, embed_func=get_distilbert_embeddings),
 }
 
 MODEL_RUNNING = {
@@ -38,12 +37,10 @@ MODEL_RUNNING = {
         lambda kwargs: svm.run_loaded_support_vector_machine(**kwargs, embed_func=get_embeddings),
     Models.LOGISTIC_REGRESSION_BOW: 
         lambda kwargs: lr.run_loaded_logistic_regression(**kwargs, embed_func=get_embeddings),
-    Models.SUPPORT_VECTOR_MACHINE_BERT:                                    # TODO: CHANGE TO BERT!
-        #lambda kwargs: svm.run_support_vector_machine(**kwargs, embed_func=get_bert),
-        lambda kwargs: (_ for _ in ()).throw(NotImplementedError()),  # <-- cursed but temp
-    Models.LOGISTIC_REGRESSION_BERT:                                   # TODO: CHANGE TO BERT!
-        #lambda kwargs: lr.run_logistic_regression(**kwargs, embed_func=get_bert),
-        lambda kwargs: (_ for _ in ()).throw(NotImplementedError()),  # <-- cursed but temp
+    Models.SUPPORT_VECTOR_MACHINE_BERT:                                    
+        lambda kwargs: svm.run_loaded_support_vector_machine(**kwargs, embed_func=get_distilbert_embeddings),
+    Models.LOGISTIC_REGRESSION_BERT:                                   
+        lambda kwargs: lr.run_loaded_logistic_regression(**kwargs, embed_func=get_distilbert_embeddings),
 }
 
 # General sanitization settings
