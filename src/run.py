@@ -44,7 +44,6 @@ def run_file(model: Models, input_path: str, data_path: str, **kwargs):
         phrases, classes = document_term.transpose_dialog_acts(dialog_acts)
     else:
         phrases = lines
-        
     running_kwargs = {
         'model_path': input_path,
         'phrases': phrases,
@@ -70,7 +69,7 @@ if __name__ == '__main__':
 
     model_name = kwargs['model']
     input_path = kwargs['input_path']
-    #input_path = '' if input_path is None else input_path
+    input_path = '' if input_path is None else input_path
     input_path = input_path.removesuffix('.joblib') + '.joblib'
 
     kwargs['model'] = MODEL_NAMES[model_name]
