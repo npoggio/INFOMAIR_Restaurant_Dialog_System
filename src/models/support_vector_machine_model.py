@@ -11,7 +11,7 @@ from sklearn.metrics import (
 
 from src.utils import parser
 from src.utils.data_split import split_data
-from src.utils.model_io import save_model
+from src.utils.model_io import save_model, load_model
 from src.utils.document_term import (
     MODEL_FILES_DIRECTORY,
     fit_count_vectorizer,
@@ -22,6 +22,19 @@ from src.utils.document_term import (
 #DATA_PATH = 
 #MODEL_NAME = "support_vector_machine_bow.joblib"
 #RANDOM_STATE = 12345
+
+def run_loaded_support_vector_machine(model_path, **kwargs):
+    classifier, vectorizer = load_model(model_path)
+    return run_support_vector_machine(classifier, vectorizer, **kwargs)
+
+
+def run_support_vector_machine(classifier, vectorizer, embed_func, phrases):
+    X = embed_func(
+        count_vectorizer=vectorizer,
+        texts=phrases,
+    )
+    predictions = classifier.predict(X)
+    return predictions
 
 
 def train_support_vector_machine(data_path: str, model_path: str, random_state: int, 

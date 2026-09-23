@@ -11,13 +11,27 @@ from sklearn.metrics import (
 
 from src.utils import parser
 from src.utils.data_split import split_data
-from src.utils.model_io import save_model
+from src.utils.model_io import save_model, load_model
 from src.utils.document_term import (
     MODEL_FILES_DIRECTORY,
     fit_count_vectorizer,
     get_embeddings,
     transpose_dialog_acts,
 )
+
+
+def run_loaded_logistic_regression(model_path, **kwargs):
+    classifier, vectorizer = load_model(model_path)
+    return run_logistic_regression(classifier, vectorizer, **kwargs)
+
+
+def run_logistic_regression(classifier, vectorizer, embed_func, phrases):
+    X = embed_func(
+        count_vectorizer=vectorizer,
+        texts=phrases,
+    )
+    predictions = classifier.predict(X)
+    return predictions
 
 
 def train_logistic_regression(data_path: str, model_path: str, random_state: int, 

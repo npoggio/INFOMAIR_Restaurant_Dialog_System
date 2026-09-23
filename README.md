@@ -57,7 +57,6 @@ The file is to be __RENAMED__ to `dialog_acts.dat` to fix a typo in the original
 ### Training
 
 There are two models that can be trained, the SVM and the LR models. Both have options for BERT and Bag of Words (BoW) features.
-
 This is a list of all the models that can be trained, with example commands. 
 
 | Model | Command | Embedding |
@@ -68,3 +67,28 @@ This is a list of all the models that can be trained, with example commands.
 | Logistic Regression with BERT | `python -m src.train -m lr_bert -r 12345 -i data/dialog_acts.dat -o model_files/lr_bert` | BERT |
 
 \**Note that SVM is Support Vector Machine with a Linear Kernel*
+
+The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file.
+
+### Running
+
+You can use the models with your phrases by running the following command, where the `-m` flag specifies the model to use (like above), the `-i` flag specifies the input model file, and the `-p` flag specifies the phrase to predict. The output will be a list of predictions for each phrase.
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best Italian place in my neighbourhood?"
+> ['request']
+```
+
+You can also pass multiple sentences to the model, and it will return a list of predictions for each sentence.
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best Italian place in my neighbourhood?" "Thank you Goodbye :)"
+> ['request' 'thankyou']
+```
+
+Alternatively, you can pass a file with phrases to the model, and it will return a list of predictions for each phrase in the file. The input file should be a .txt file with one phrase per line. Or a .dat file, which can be evaluated too. 
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/example_phrases.txt
+> ['hello', 'inform']
+```
