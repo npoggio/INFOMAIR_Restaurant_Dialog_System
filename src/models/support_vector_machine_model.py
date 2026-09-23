@@ -5,7 +5,7 @@ import joblib
 from sklearn.svm import LinearSVC
 from sklearn.metrics import (
     accuracy_score,
-    balanced_accuracy_score,
+    recall_score,
     classification_report,
 )
 
@@ -47,12 +47,12 @@ def train_support_vector_machine(data_path: str, model_path: str, random_state: 
     phrases, classes = transpose_dialog_acts(dialog_acts)
 
     # Split the raw text into training and testing data
-    # TODO: Implement `grouped_split`
     data = split_data(
         X=phrases,
         y=classes,
         test_size=0.15,
-        random_state=random_state
+        random_state=random_state,
+        grouped=grouped_split,
     )
 
     # Learn the bag-of-words vocabulary from training text only
@@ -99,7 +99,9 @@ def train_support_vector_machine(data_path: str, model_path: str, random_state: 
 
     print(
         "Balanced accuracy:",
-        balanced_accuracy_score(data.y_test, predictions),
+        # Balanced accuracy = mean recall over the classes in the test set. Passing `labels`
+        # avoids a warning when the model predicts a class the test set lacks (e.g. reqmore).
+        recall_score(data.y_test, predictions, labels=sorted(set(data.y_test)), average="macro"),
     )
 
     print(
