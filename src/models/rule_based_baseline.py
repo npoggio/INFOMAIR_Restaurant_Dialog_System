@@ -1,6 +1,6 @@
 import re
 
-from utils.dialog_act import DialogAct
+from src.enums.dialog_act import DialogAct
 
 
 RULES = {
