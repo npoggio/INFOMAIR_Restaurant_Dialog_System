@@ -10,6 +10,7 @@ from sklearn.metrics import (
 
 from src.utils import parser
 from src.utils.data_split import split_data
+from src.utils.model_io import save_model
 from src.utils.document_term import (
     MODEL_FILES_DIRECTORY,
     fit_count_vectorizer,
@@ -96,14 +97,7 @@ def train_support_vector_machine(data_path: str, model_path: str, random_state: 
     # Save the vectorizer and classifier together
     model_dir: str = os.path.abspath(os.path.join(model_path, '..'))
     os.makedirs(model_dir, exist_ok=True)
-
-    model_bundle = {
-        "vectorizer": vectorizer,
-        "classifier": classifier,
-    }
-
-    joblib.dump(model_bundle, model_path)
-
+    save_model(model_path, classifier=classifier, vectorizer=vectorizer)
     print(f"Saved model to {model_path}")
 
 
