@@ -17,14 +17,14 @@ from src.utils.document_term import (
     transpose_dialog_acts,
 )
 
-DATA_PATH = "data/dialog_acts.dat"
-MODEL_NAME = "support_vector_machine_bow.joblib"
-RANDOM_STATE = 12345
+#DATA_PATH = 
+#MODEL_NAME = "support_vector_machine_bow.joblib"
+#RANDOM_STATE = 12345
 
 
-def support_vector_machine():
+def train_support_vector_machine(data_path: str, model_path: str, random_state: int):
     # Read and parse the dataset
-    lines = parser.read_text_file_lines(DATA_PATH)
+    lines = parser.read_text_file_lines(data_path)
     dialog_acts = parser.parse_dstc_dat_file(lines)
 
     # Separate utterances and labels
@@ -35,7 +35,7 @@ def support_vector_machine():
         X=phrases,
         y=classes,
         test_size=0.15,
-        random_state=RANDOM_STATE
+        random_state=random_state
     )
 
     # Learn the bag-of-words vocabulary from training text only
@@ -66,7 +66,7 @@ def support_vector_machine():
         fit_intercept = True,
         intercept_scaling = 1,
         class_weight=None,
-        random_state=RANDOM_STATE,
+        random_state=random_state,
         max_iter=1000,
     )
 
@@ -94,17 +94,13 @@ def support_vector_machine():
     )
 
     # Save the vectorizer and classifier together
-    os.makedirs(MODEL_FILES_DIRECTORY, exist_ok=True)
+    model_dir: str = os.path.abspath(os.path.join(model_path, '..'))
+    os.makedirs(model_dir, exist_ok=True)
 
     model_bundle = {
         "vectorizer": vectorizer,
         "classifier": classifier,
     }
-
-    model_path = os.path.join(
-        MODEL_FILES_DIRECTORY,
-        MODEL_NAME,
-    )
 
     joblib.dump(model_bundle, model_path)
 
@@ -112,4 +108,12 @@ def support_vector_machine():
 
 
 if __name__ == "__main__":
-    support_vector_machine()
+    data_path = "data/dialog_acts.dat"
+    model_path = os.path.join(MODEL_FILES_DIRECTORY, 'support_vector_machine_bow.joblib')
+    random_state = 12345
+
+    train_support_vector_machine(
+        data_path = data_path,
+        model_path = model_path,
+        random_state = random_state
+    )
