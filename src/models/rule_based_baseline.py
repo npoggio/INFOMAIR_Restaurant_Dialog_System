@@ -1,15 +1,15 @@
 import re
 
-from utils.dialog_act import DialogAct
+from sklearn.metrics import accuracy_score
+
+from src.enums.dialog_act import DialogAct
 from src.utils import parser
 from src.utils.data_split import split_data
 from src.utils.document_term import transpose_dialog_acts
-from sklearn.metrics import accuracy_score
 
-DATA_PATH = "data/dialog_acts.dat"
+DATA_PATH = "data/dailog_acts.dat"
 RANDOM_STATE = 12345
 
-#TODO: get a more expansive list of cuisine types
 CUISINES = (
     "italian",
     "chinese",
@@ -38,7 +38,7 @@ RULES = {
         "start again",
         "reset"
     ),
-    DialogAct.REQALTS: (
+    DialogAct.REQUALTS: (
         "how about", 
         "next", 
         "anything else", 
@@ -154,28 +154,25 @@ def classify_dialog_act(utterance: str) -> DialogAct:
 
     return DialogAct.NULL #Default
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    while True:
-        utterance = input("Enter an utterance (or 'quit' to stop): ")
+    # while True:
+        # utterance = input("Enter an utterance (or 'quit' to stop): ")
 
-        if utterance.lower().strip() == "quit":
-            break
+        # if utterance.lower().strip() == "quit":
+            # break
 
-        prediction = classify_dialog_act(utterance)
+        # prediction = classify_dialog_act(utterance)
 
-        print(f"Predicted dialog act: {prediction.value}")
+        # print(f"Predicted dialog act: {prediction.value}")
 
 def evaluate_rulebase():
-    # Read and parse the dataset
     lines = parser.read_text_file_lines(DATA_PATH)
     dialog_acts = parser.parse_dstc_dat_file(lines)
 
-    # Separate utterances and labels
     phrases, classes = transpose_dialog_acts(dialog_acts)
 
-    # Split the raw text into training and testing data
-    data = split_data( # copy this
+    data = split_data( 
         X=phrases,
         y=classes,
         test_size=0.15,
@@ -192,3 +189,6 @@ def evaluate_rulebase():
         "Accuracy:",
         accuracy_score(data.y_test, predictions),
     )
+
+if __name__ == "__main__":
+    evaluate_rulebase()
