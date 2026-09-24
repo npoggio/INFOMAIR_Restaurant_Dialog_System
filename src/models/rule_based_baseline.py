@@ -160,18 +160,6 @@ def classify_dialog_act(utterance: str) -> DialogAct:
 
     return DialogAct.NULL #Default
 
-# if __name__ == "__main__":
-
-    # while True:
-        # utterance = input("Enter an utterance (or 'quit' to stop): ")
-
-        # if utterance.lower().strip() == "quit":
-            # break
-
-        # prediction = classify_dialog_act(utterance)
-
-        # print(f"Predicted dialog act: {prediction.value}")
-
 def evaluate_rulebase():
     lines = parser.read_text_file_lines(DATA_PATH)
     dialog_acts = parser.parse_dstc_dat_file(lines)
