@@ -44,7 +44,7 @@ def train_logistic_regression(data_path: str, model_path: str, random_state: int
     phrases, classes = transpose_dialog_acts(dialog_acts)
 
     # Split the raw text into training and testing data
-    data = split_data( # copy this
+    data = split_data(
         X=phrases,
         y=classes,
         test_size=0.15,
