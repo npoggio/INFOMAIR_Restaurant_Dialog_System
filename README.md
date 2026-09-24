@@ -61,14 +61,14 @@ This is a list of all the models that can be trained, with example commands.
 
 | Model | Command | Embedding |
 |-------|---------|-----------|
-| Support Vector with BoW | `python -m src.train -m svm_bow -r 12345 -i data/dialog_acts.dat -o model_files/svm_bow` | Bag of Words |
-| Support Vector with BERT | `python -m src.train -m svm_bert -r 12345 -i data/dialog_acts.dat -o model_files/svm_bert` | BERT |
-| Logistic Regression with BoW | `python -m src.train -m lr_bow -r 12345 -i data/dialog_acts.dat -o model_files/lr_bow` | Bag of Words |
-| Logistic Regression with BERT | `python -m src.train -m lr_bert -r 12345 -i data/dialog_acts.dat -o model_files/lr_bert` | BERT |
+| Support Vector with BoW | `python -m src.train -m svm_bow -r 12345 -i data/dialog_acts.dat -o model_files/svm_bow --evaluate` | Bag of Words |
+| Support Vector with BERT | `python -m src.train -m svm_bert -r 12345 -i data/dialog_acts.dat -o model_files/svm_bert --evaluate` | BERT |
+| Logistic Regression with BoW | `python -m src.train -m lr_bow -r 12345 -i data/dialog_acts.dat -o model_files/lr_bow --evaluate` | Bag of Words |
+| Logistic Regression with BERT | `python -m src.train -m lr_bert -r 12345 -i data/dialog_acts.dat -o model_files/lr_bert --evaluate` | BERT |
 
 \**Note that SVM is Support Vector Machine with a Linear Kernel*
 
-The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file. The `-m` flag specifies the model to train, and the `-g` flag can be used to specify a grouped split instead of a random  split, which ensures that all duplicates of an utterance end up in the same split so no identical utterances leak between train and test. The default is a random split. Both splits are stratified by class. 
+The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file. The `-m` flag specifies the model to train, and the `-g` flag can be used to specify a grouped split instead of a random  split, which ensures that all duplicates of an utterance end up in the same split so no identical utterances leak between train and test. The default is a random split. Both splits are stratified by class. Lastly, the `--evaluate` flag can be used to evaluate the model on the test set after training and outputting the results to the console and a .json file in the model_files folder.
 
 ### Running
 

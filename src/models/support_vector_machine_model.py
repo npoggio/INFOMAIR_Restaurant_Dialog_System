@@ -98,7 +98,7 @@ def train_support_vector_machine(data_path: str, model_path: str, random_state: 
     if evaluate:
         # Evaluate the model
         predictions = classifier.predict(X_test)
-        file_name = model_path.removesuffix('.joblib') + '_perf.json'
+        file_name = model_path.removesuffix('.joblib') + '_perf_train.json'
         report = write_performance(data.y_test, predictions, file_name)
         print(report)
 

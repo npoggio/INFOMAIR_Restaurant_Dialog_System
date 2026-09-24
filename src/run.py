@@ -40,7 +40,6 @@ def run_arg_parser() -> Dict[str, Any]:
 
 def run_file(model: Models, input_path: str, data_path: str, evaluate: bool, **kwargs):
     running_func = MODEL_RUNNING[model]
-    print(evaluate)
 
     # Read and parse the dataset
     lines = parser.read_text_file_lines(data_path)
@@ -61,7 +60,8 @@ def run_file(model: Models, input_path: str, data_path: str, evaluate: bool, **k
 
     if data_path.endswith('.dat'):
         path = input_path.removesuffix('.joblib') + '_perf.json'
-        write_performance(classes, output, path)
+        perf = write_performance(classes, output, path)  # type: ignore
+        print(perf)
 
     return output
 
@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     model_name = kwargs['model']
     input_path = kwargs['input_path']
-    input_path = 'rb' if input_path is None else input_path
+    input_path = 'model_files/rb' if input_path is None else input_path
     input_path = input_path.removesuffix('.joblib') + '.joblib'
 
     kwargs['model'] = MODEL_NAMES[model_name]

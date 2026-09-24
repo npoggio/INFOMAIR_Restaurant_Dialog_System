@@ -110,7 +110,7 @@ def train_logistic_regression(data_path: str, model_path: str, random_state: int
     if evaluate:
         # Evaluate the model
         predictions = classifier.predict(X_test)
-        file_name = model_path.removesuffix('.joblib') + '_performance.json'
+        file_name = model_path.removesuffix('.joblib') + '_perf_train.json'
         report = write_performance(data.y_test, predictions, file_name)
         print(report)
 
