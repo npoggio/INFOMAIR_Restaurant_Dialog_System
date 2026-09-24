@@ -1,6 +1,8 @@
 # InfoMAIR
 Super cool project about making a restuarent recommendaiton bot >:D
 
+**General note**
+We were told not to use notebooks for this project. However to create the graphs from the results, we used a notebook to create the graphs and then exported them to .png files. The notebook is included in the repo, but is not seen as an integral part of the project. The notebook is only used to create the graphs from the results, and is not used in the actual training or running of the models.
 
 ## Environment Setup
 
@@ -91,6 +93,12 @@ Alternatively, you can pass a file with phrases to the model, and it will return
 ```bash
 python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/example_phrases.txt
 > ['hello', 'inform']
+```
+
+An accuracy report can be generated for a .dat file with the `--evaluate` flag, which will output a report per class and write to the `model_files/` directory. The report will also be printed to the console.
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/dialog_acts.dat --evaluate
 ```
 
 Lastly, you can also have an interactive console where you can type in phrases and get predictions for each phrase. The console will exit when you type `exit` or `quit`. 
