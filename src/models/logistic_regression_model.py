@@ -11,7 +11,7 @@ from sklearn.metrics import (
 
 from src.utils import parser
 from src.utils.data_split import split_data
-from src.utils.model_io import save_model, load_model
+from src.utils.model_io import save_model, load_model, write_performance
 from src.utils.document_term import (
     MODEL_FILES_DIRECTORY,
     fit_count_vectorizer,
@@ -34,8 +34,8 @@ def run_logistic_regression(classifier, vectorizer, embed_func, phrases):
     return predictions
 
 
-def train_logistic_regression(data_path: str, model_path: str, random_state: int, 
-                              embed_func: Callable, grouped_split: bool = False):
+def train_logistic_regression(data_path: str, model_path: str, random_state: int,
+                              embed_func: Callable, grouped_split: bool = False, evaluate: bool = True):
     # Read and parse the dataset
     lines = parser.read_text_file_lines(data_path)
     dialog_acts = parser.parse_dstc_dat_file(lines)
@@ -106,6 +106,13 @@ def train_logistic_regression(data_path: str, model_path: str, random_state: int
     os.makedirs(model_dir, exist_ok=True)
     save_model(model_path, classifier=classifier, vectorizer=vectorizer)
     print(f"Saved model to {model_path}")
+
+    if evaluate:
+        # Evaluate the model
+        predictions = classifier.predict(X_test)
+        file_name = model_path.removesuffix('.joblib') + '_performance.json'
+        report = write_performance(data.y_test, predictions, file_name)
+        print(report)
 
     return classifier, vectorizer
 
