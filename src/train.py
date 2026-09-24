@@ -27,21 +27,24 @@ def train_arg_parser() -> Dict[str, Any]:
                         type=int, required=True)
     parser.add_argument('-g', '--grouped_split', 
                         action='store_true', help='Whether to keep all same X in the train/split sections')
+    parser.add_argument('--evaluate',
+                        action='store_true', help='Whether to evaluate the train input')
 
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
     return namesp.__dict__
 
 
-def train(model: Models, input_path: str,
+def train(model: Models, input_path: str, evaluate: bool,
           output_path: str, random_state: int, grouped_split: bool):
-    
+
     training_func = MODELS_TRAINING[model]
     training_kwargs = {
         'data_path': input_path,
         'model_path': output_path,
         'random_state': random_state,
-        'grouped_split': grouped_split
+        'grouped_split': grouped_split,
+        'evaluate': evaluate
     }
 
     training_func(training_kwargs)

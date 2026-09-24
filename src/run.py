@@ -5,6 +5,7 @@ import src.models.support_vector_machine_model as svm
 import src.models.logistic_regression_model as lr
 import src.models.rule_based_baseline as rb
 import src.utils.parser as parser
+from src.utils.model_io import write_performance
 import src.utils.document_term as document_term
 from src.enums.models import Models
 from src import PROGRAM, DESCRIPTION, MODEL_NAMES, MODEL_RUNNING, DO_LOWER, REMOVE_APOSTRAPHES
@@ -29,13 +30,15 @@ def run_arg_parser() -> Dict[str, Any]:
                         type=str, help="The path to a .dat or .txt file to run")
     parser.add_argument('--interactive', 
                         action='store_true', help="Enable flexable inputs")
+    parser.add_argument('--evaluate', 
+                        action='store_true', help="Write an evauation to the input path, altered to be a txt file")
 
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
     return namesp.__dict__
 
 
-def run_file(model: Models, input_path: str, data_path: str, **kwargs):
+def run_file(model: Models, input_path: str, data_path: str, evaluate: bool, **kwargs):
     running_func = MODEL_RUNNING[model]
 
     # Read and parse the dataset
@@ -53,7 +56,14 @@ def run_file(model: Models, input_path: str, data_path: str, **kwargs):
         'phrases': phrases,
     }
 
-    return running_func(running_kwargs)
+    output = running_func(running_kwargs)
+
+    if data_path.endswith('.dat'):
+        path = input_path.removesuffix('.joblib') + '_perf.json'
+        perf = write_performance(classes, output, path)  # type: ignore
+        print(perf)
+
+    return output
 
 def run_str(model: Models, input_path: str, phrases: list, **kwargs):
     running_func = MODEL_RUNNING[model]
@@ -76,7 +86,7 @@ if __name__ == '__main__':
 
     model_name = kwargs['model']
     input_path = kwargs['input_path']
-    input_path = '' if input_path is None else input_path
+    input_path = 'model_files/rb' if input_path is None else input_path
     input_path = input_path.removesuffix('.joblib') + '.joblib'
 
     kwargs['model'] = MODEL_NAMES[model_name]
