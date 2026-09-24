@@ -28,5 +28,5 @@ def load_model(file_path) -> Tuple[Any, Any]:
 
 
 if __name__ == '__main__':
-    out = load_model('model_files/support_vector_machine_bow.joblib')
+    out = load_model('model_files/svm_bow.joblib')
     print(out)

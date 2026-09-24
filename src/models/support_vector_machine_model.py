@@ -20,7 +20,7 @@ from src.utils.document_term import (
 )
 
 #DATA_PATH = 
-#MODEL_NAME = "support_vector_machine_bow.joblib"
+#MODEL_NAME = "svm_bow.joblib"
 #RANDOM_STATE = 12345
 
 def run_loaded_support_vector_machine(model_path, **kwargs):
@@ -123,7 +123,7 @@ def train_support_vector_machine(data_path: str, model_path: str, random_state: 
 
 if __name__ == "__main__":
     data_path = "data/dialog_acts.dat"
-    model_path = os.path.join(MODEL_FILES_DIRECTORY, 'support_vector_machine_bow.joblib')
+    model_path = os.path.join(MODEL_FILES_DIRECTORY, 'svm_bow.joblib')
     random_state = 12345
 
     train_support_vector_machine(

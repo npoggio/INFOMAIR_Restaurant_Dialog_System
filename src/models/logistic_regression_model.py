@@ -112,7 +112,7 @@ def train_logistic_regression(data_path: str, model_path: str, random_state: int
 
 if __name__ == "__main__":
     data_path = "data/dialog_acts.dat"
-    model_path = os.path.join(MODEL_FILES_DIRECTORY, 'support_vector_machine_bow.joblib')
+    model_path = os.path.join(MODEL_FILES_DIRECTORY, 'lr_bow.joblib')
     random_state = 12345
 
     train_logistic_regression(
