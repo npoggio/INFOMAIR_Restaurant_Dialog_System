@@ -109,8 +109,3 @@ python -m src.run -m svm_bow -i model_files/svm_bow --interactive
 > You: What is the best Italian restaurant near me?
 > ['inform']
 ```
-
-## Performance
-
-| Model | Embedding | Accuracy | F1 Score | Random State |
-|-------|-----------|----------|----------|--------------|
