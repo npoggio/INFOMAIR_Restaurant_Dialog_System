@@ -2,7 +2,7 @@ import os
 from typing import Callable
 
 import joblib
-from sklearn.linear_model import LogisticRegression
+from sklearn.svm import LinearSVC
 from sklearn.metrics import (
     accuracy_score,
     recall_score,
@@ -19,13 +19,16 @@ from src.utils.document_term import (
     transpose_dialog_acts,
 )
 
+#DATA_PATH = 
+#MODEL_NAME = "support_vector_machine_bow.joblib"
+#RANDOM_STATE = 12345
 
-def run_loaded_logistic_regression(model_path, **kwargs):
+def run_loaded_support_vector_machine(model_path, **kwargs):
     classifier, vectorizer = load_model(model_path)
-    return run_logistic_regression(classifier, vectorizer, **kwargs)
+    return run_support_vector_machine(classifier, vectorizer, **kwargs)
 
 
-def run_logistic_regression(classifier, vectorizer, embed_func, phrases):
+def run_support_vector_machine(classifier, vectorizer, embed_func, phrases):
     X = embed_func(
         count_vectorizer=vectorizer,
         texts=phrases,
@@ -34,8 +37,8 @@ def run_logistic_regression(classifier, vectorizer, embed_func, phrases):
     return predictions
 
 
-def train_logistic_regression(data_path: str, model_path: str, random_state: int, 
-                              embed_func: Callable, grouped_split: bool = False):
+def train_support_vector_machine(data_path: str, model_path: str, random_state: int, 
+                                 embed_func: Callable, grouped_split: bool = False):
     # Read and parse the dataset
     lines = parser.read_text_file_lines(data_path)
     dialog_acts = parser.parse_dstc_dat_file(lines)
@@ -44,7 +47,7 @@ def train_logistic_regression(data_path: str, model_path: str, random_state: int
     phrases, classes = transpose_dialog_acts(dialog_acts)
 
     # Split the raw text into training and testing data
-    data = split_data( # copy this
+    data = split_data(
         X=phrases,
         y=classes,
         test_size=0.15,
@@ -70,10 +73,18 @@ def train_logistic_regression(data_path: str, model_path: str, random_state: int
     )
 
     # Create and train Logistic Regression
-    classifier = LogisticRegression(
-        max_iter=2000,
-        class_weight="balanced",
+    classifier = LinearSVC(
+        penalty = "l2",
+        loss = 'squared_hinge',
+        dual = True,
+        tol = 0.0001,
+        C = 1,
+        multi_class = "ovr",
+        fit_intercept = True,
+        intercept_scaling = 1,
+        class_weight=None,
         random_state=random_state,
+        max_iter=1000,
     )
 
     classifier.fit(X_train, data.y_train)
@@ -115,7 +126,7 @@ if __name__ == "__main__":
     model_path = os.path.join(MODEL_FILES_DIRECTORY, 'support_vector_machine_bow.joblib')
     random_state = 12345
 
-    train_logistic_regression(
+    train_support_vector_machine(
         data_path = data_path,
         model_path = model_path,
         random_state = random_state,

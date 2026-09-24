@@ -222,3 +222,4 @@ __marimo__/
 *.dat
 .vscode/settings.json
 *.joblib
+model_files/bert_cache/*
