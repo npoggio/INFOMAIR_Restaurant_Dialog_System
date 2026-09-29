@@ -1,5 +1,7 @@
 """A module to write parsers in that will be used to read .dat files"""
 from typing import List, Tuple, Optional
+import numpy as np
+import pandas as pd
 
 TEXTUAL_FILE_TYPES = '.txt', '.dat'
 
@@ -94,14 +96,43 @@ def parse_dstc_dat_file(dat_lines: List[str],
     return pairs        
 
 
+def load_restaurant_data(file_path: str) -> pd.DataFrame:
+    return pd.read_csv(file_path)
+
+
+def fetch_resturant_by_info(
+        restaurant_info: pd.DataFrame,
+        restaurantname: Optional[str] = None,
+        pricerange: Optional[str] = None,
+        area: Optional[str] = None,
+        food: Optional[str] = None,
+        postcode: Optional[str] = None,
+        food_quality: Optional[str] = None,
+        crowdedness: Optional[str] = None,
+        length_of_stay: Optional[str] = None,):
+
+    anyval = np.ones_like(restaurant_info['restaurantname'].to_numpy())
+    conditions = [
+        (restaurant_info['restaurantname'] == restaurantname) if restaurantname == None else anyval,
+    ]    
+
+    return restaurant_info.where(conditions)
+
+
 # For testing, wil only run when this module is called upon specifically
 if __name__ == '__main__':
-    file_path: str = 'data/dialog_acts.dat'
-    n_lines: int = 5
+    file_path: str = 'data/restaurant_info_extended.csv'
+    rd = load_restaurant_data(file_path)
+    rd = fetch_resturant_by_info(rd)
 
-    dat_lines: List[str] = read_text_file_lines(file_path=file_path)
-    print(*dat_lines[:n_lines], sep='\n')
+    print(rd)
 
-    verbose: bool = True
-    parsed_dat_file = parse_dstc_dat_file(dat_lines=dat_lines)
-    print(*parsed_dat_file[:n_lines], sep='\n')
+    #file_path: str = 'data/dialog_acts.dat'
+    #n_lines: int = 5
+
+    #dat_lines: List[str] = read_text_file_lines(file_path=file_path)
+    #print(*dat_lines[:n_lines], sep='\n')
+
+    #verbose: bool = True
+    #parsed_dat_file = parse_dstc_dat_file(dat_lines=dat_lines)
+    #print(*parsed_dat_file[:n_lines], sep='\n')
