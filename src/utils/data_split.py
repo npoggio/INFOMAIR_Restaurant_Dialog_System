@@ -67,7 +67,6 @@ def _grouped_split(X, y, test_size: float, random_state: int) -> DataSplit:
         sentence_classes[sentence][label] += 1
 
     # Give each sentence one class (its most common one) and put it in the list for that class
-    # e.g. class_sentences["affirm"] = ["right", "yeah", "yes", ...]
     class_sentences = defaultdict(list)
     for sentence in sorted(sentence_classes):
         label = sentence_classes[sentence].most_common(1)[0][0]

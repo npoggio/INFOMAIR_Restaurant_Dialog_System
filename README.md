@@ -1,6 +1,9 @@
 # InfoMAIR
 Super cool project about making a restuarent recommendaiton bot >:D
 
+**General note**
+We were told not to use notebooks for this project. However to create the graphs from the results, we used a notebook to create the graphs and then exported them to .png files. The notebook is included in the repo, but is not seen as an integral part of the project. The notebook is only used to create the graphs from the results, and is not used in the actual training or running of the models.
+
 ## Architecture
 <img src="assets/process_diagram/Restaurant_Dialog_State_Machine_v1.svg" width="75%">
 
@@ -53,10 +56,10 @@ mamba env update -f environment.yml
 ## Running the Code
 ### Data Insertion
 
-The `dailog_acts.dat` file can be downloaded from [Brightspace](https://uu.brightspace.com/d2l/le/lessons/121884/topics/693121) and put into the [`data/`](data/) folder. 
+The `dailog_acts.dat` (sic) file can be downloaded from [Brightspace](https://uu.brightspace.com/d2l/le/lessons/121884/topics/693121) and put into the [`data/`](data/) folder. 
 
 __***NOTE!!!***__
-The file is to be __RENAMED__ to `dialog_acts.dat` to fix a typo in the original file name. Make sure to rename it before putting it in the `data/` folder.
+The file is to be __RENAMED__ to `dialog_acts.dat` to fix a typo in the original file name. We recommend renaming it before putting it in the `data/` folder.
 
 ### Training Dialog Classifiers
 
@@ -65,14 +68,14 @@ This is a list of all the models that can be trained, with example commands.
 
 | Model | Command | Embedding |
 |-------|---------|-----------|
-| Support Vector with BoW | `python -m src.train -m svm_bow -r 12345 -i data/dialog_acts.dat -o model_files/svm_bow` | Bag of Words |
-| Support Vector with BERT | `python -m src.train -m svm_bert -r 12345 -i data/dialog_acts.dat -o model_files/svm_bert` | BERT |
-| Logistic Regression with BoW | `python -m src.train -m lr_bow -r 12345 -i data/dialog_acts.dat -o model_files/lr_bow` | Bag of Words |
-| Logistic Regression with BERT | `python -m src.train -m lr_bert -r 12345 -i data/dialog_acts.dat -o model_files/lr_bert` | BERT |
+| Support Vector with BoW | `python -m src.train -m svm_bow -r 12345 -i data/dialog_acts.dat -o model_files/svm_bow --evaluate` | Bag of Words |
+| Support Vector with BERT | `python -m src.train -m svm_bert -r 12345 -i data/dialog_acts.dat -o model_files/svm_bert --evaluate` | BERT |
+| Logistic Regression with BoW | `python -m src.train -m lr_bow -r 12345 -i data/dialog_acts.dat -o model_files/lr_bow --evaluate` | Bag of Words |
+| Logistic Regression with BERT | `python -m src.train -m lr_bert -r 12345 -i data/dialog_acts.dat -o model_files/lr_bert --evaluate` | BERT |
 
 \**Note that SVM is Support Vector Machine with a Linear Kernel*
 
-The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file. The `-m` flag specifies the model to train, and the `-g` flag can be used to specify whether to use a grouped split, which ensures that all duplicates of an utterance end up in the same split so no identical utterances leak between train and test. The default is a random split. Both splits are stratified by class. 
+The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file. The `-m` flag specifies the model to train, and the `-g` flag can be used to specify a grouped split instead of a random  split, which ensures that all duplicates of an utterance end up in the same split so no identical utterances leak between train and test. The default is a random split. Both splits are stratified by class. Lastly, the `--evaluate` flag can be used to evaluate the model on the test set after training and outputting the results to the console and a .json file in the model_files folder.
 
 ### Running Dialog Classifiers
 
@@ -80,6 +83,11 @@ You can use the models with your phrases by running the following command, where
 
 ```bash
 python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best Italian place in my neighbourhood?"
+> ['request']
+```
+Generally -i is not needed for the rule-based model, as it does not require a trained model file. The command for the rule-based model is as follows:
+```bash
+python -m src.run -m rb -p "Where is the best Italian place in my neighbourhood?"
 > ['request']
 ```
 
@@ -93,9 +101,20 @@ python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best
 Alternatively, you can pass a file with phrases to the model, and it will return a list of predictions for each phrase in the file. The input file should be a .txt file with one phrase per line. Or a .dat file, which can be evaluated too. 
 
 ```bash
-python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/example_phrases.txt
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -d data/example_phrases.txt
 > ['hello', 'inform']
 ```
+
+An accuracy report can be generated for a .dat file with the `--evaluate` flag, which will output a report per class and write to the `model_files/` directory. The report will also be printed to the console. Note that `-i` has to be specified with a directory or model file that the evaluation json file will be saved in, and `-d` has to be specified with the .dat file.
+
+```bash
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -d data/dialog_acts.dat --evaluate
+```
+When you want to only use a part of the dataset provided you can specify a test-split (`--test_split`), split seed (`--tts_seed`) and whether to use a grouped split (`-g`) or not. The following command will use 15% of the dataset for testing, with a random seed of 12345 and a grouped split.:
+```bash
+python -m src.run -m rb -i model_files/rb_ --evaluate -d data/dialog_acts.dat --test_split 0.15 --tts_seed 12345 -g
+```
+
 
 Lastly, you can also have an interactive console where you can type in phrases and get predictions for each phrase. The console will exit when you type `exit` or `quit`. 
 
