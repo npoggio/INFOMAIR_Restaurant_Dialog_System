@@ -1,8 +1,13 @@
 # InfoMAIR
 Super cool project about making a restuarent recommendaiton bot >:D
 
+## Architecture
+<img src="assets/process_diagram/Restaurant_Dialog_State_Machine_v1.svg" width="75%">
 
-## Environment Setup
+Made using [draw.io](https://app.diagrams.net)
+
+## Environment
+### Environment Setup
 
 Create the Mamba environment in the MiniForge Prompt using:
 
@@ -28,8 +33,7 @@ To deactivate the environment:
 mamba deactivate
 ```
 
-
-## Updating the Environment
+### Updating the Environment
 
 When adding a new dependency, install it with Mamba:
 
@@ -45,16 +49,16 @@ After pulling an updated `environment.yml`, update your existing environment wit
 mamba env update -f environment.yml
 ```
 
-## Data Insertion
+
+## Running the Code
+### Data Insertion
 
 The `dailog_acts.dat` file can be downloaded from [Brightspace](https://uu.brightspace.com/d2l/le/lessons/121884/topics/693121) and put into the [`data/`](data/) folder. 
 
 __***NOTE!!!***__
 The file is to be __RENAMED__ to `dialog_acts.dat` to fix a typo in the original file name. Make sure to rename it before putting it in the `data/` folder.
 
-## Usage
-
-### Training
+### Training Dialog Classifiers
 
 There are two models that can be trained, the SVM and the LR models. Both have options for BERT and Bag of Words (BoW) features.
 This is a list of all the models that can be trained, with example commands. 
@@ -70,7 +74,7 @@ This is a list of all the models that can be trained, with example commands.
 
 The Train-test split is automatically done with a 85-15 split, and the random seed can be set with the `-r` flag. The input file is specified with the `-i` flag, and the output file for the model files is specified with the `-o` flag, as the model will be exported to a .joblib file. The `-m` flag specifies the model to train, and the `-g` flag can be used to specify whether to use a grouped split, which ensures that all duplicates of an utterance end up in the same split so no identical utterances leak between train and test. The default is a random split. Both splits are stratified by class. 
 
-### Running
+### Running Dialog Classifiers
 
 You can use the models with your phrases by running the following command, where the `-m` flag specifies the model to use (like above), the `-i` flag specifies the input model file, and the `-p` flag specifies the phrase to predict. The output will be a list of predictions for each phrase.
 
