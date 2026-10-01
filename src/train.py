@@ -4,6 +4,7 @@ import sys
 import src.models.support_vector_machine_model as svm
 import src.models.logistic_regression_model as lr
 import src.models.rule_based_baseline as rb
+import src
 from src.enums.models import Models
 from src import PROGRAM, DESCRIPTION, MODEL_NAMES, MODELS_TRAINING
 
@@ -32,7 +33,8 @@ def train_arg_parser() -> Dict[str, Any]:
 
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
-    return namesp.__dict__
+    src.CLI_KWARGS = namesp.__dict__
+    return src.CLI_KWARGS
 
 
 def train(model: Models, input_path: str, evaluate: bool,

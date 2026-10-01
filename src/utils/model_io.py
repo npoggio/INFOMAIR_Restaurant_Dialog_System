@@ -2,6 +2,7 @@ from typing import Any, Tuple
 import joblib
 import os
 import json
+from datetime import datetime
 from sklearn.metrics import classification_report
 
 def save_model(file_path, classifier, vectorizer):
@@ -28,7 +29,7 @@ def load_model(file_path) -> Tuple[Any, Any]:
     return classifier, vectorizer
 
 
-def write_performance(y_true, y_pred, path) -> str:
+def write_performance(y_true, y_pred, path, cli_kwargs={}) -> str:
     class_rep_kwargs = dict(
         y_true=y_true,
         y_pred=y_pred,
@@ -37,9 +38,14 @@ def write_performance(y_true, y_pred, path) -> str:
     )
 
     class_rep = classification_report(**class_rep_kwargs, output_dict=True) # type: ignore
+    out_json = {
+        "dt": datetime.now().strftime("%d/%m/%Y, %H:%M:%S"),
+        "cli_kwargs": cli_kwargs,
+        "results": class_rep
+    }
 
     with open(path, 'w', encoding='utf-8') as file:
-        json.dump(class_rep, file, indent=4)
+        json.dump(out_json, file, indent=4)
 
     return (classification_report(**class_rep_kwargs)) # type: ignore
     

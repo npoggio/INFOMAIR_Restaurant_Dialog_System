@@ -9,6 +9,7 @@ from sklearn.metrics import (
     classification_report,
 )
 
+import src
 from src.utils import parser
 from src.utils.data_split import split_data
 from src.utils.model_io import save_model, load_model, write_performance
@@ -99,7 +100,7 @@ def train_support_vector_machine(data_path: str, model_path: str, random_state: 
         # Evaluate the model
         predictions = classifier.predict(X_test)
         file_name = model_path.removesuffix('.joblib') + '_perf_train.json'
-        report = write_performance(data.y_test, predictions, file_name)
+        report = write_performance(data.y_test, predictions, file_name, src.CLI_KWARGS)
         print(report)
 
     return classifier, vectorizer

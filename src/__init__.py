@@ -17,6 +17,8 @@ MODEL_NAMES = {
     'lr_bert': Models.LOGISTIC_REGRESSION_BERT,
 }
 
+CLI_KWARGS = {}
+
 MODELS_TRAINING = {
     Models.RULE_BASED: 
         None,

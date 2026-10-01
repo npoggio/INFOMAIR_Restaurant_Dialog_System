@@ -1,6 +1,7 @@
 from typing import Dict, Any
 import argparse
 import sys
+import src
 import src.models.support_vector_machine_model as svm
 import src.models.logistic_regression_model as lr
 import src.models.rule_based_baseline as rb
@@ -42,7 +43,8 @@ def run_arg_parser() -> Dict[str, Any]:
 
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
-    return namesp.__dict__
+    src.CLI_KWARGS = namesp.__dict__
+    return src.CLI_KWARGS
 
 
 def run_file(model: Models, input_path: str, data_path: str, evaluate: bool, **kwargs):
@@ -93,7 +95,7 @@ def run_file(model: Models, input_path: str, data_path: str, evaluate: bool, **k
             .removesuffix('\\')
             + '_perf.json'
         )
-        perf = write_performance(y_test, output, path)  # type: ignore
+        perf = write_performance(y_test, output, path, cli_kwargs=src.CLI_KWARGS)  # type: ignore
         print(perf)
 
     return output
