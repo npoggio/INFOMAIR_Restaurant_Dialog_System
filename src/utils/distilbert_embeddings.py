@@ -1,24 +1,30 @@
 from typing import Optional
-from transformers import DistilBertTokenizer, DistilBertModel
+from functools import lru_cache
 from sklearn.feature_extraction.text import CountVectorizer
 from typing import List
 
 import numpy as np
-import torch
 
 
-tokenizer = DistilBertTokenizer.from_pretrained(
-    "distilbert-base-uncased",
-    cache_dir='model_files/bert_cache/'
-)
+@lru_cache(maxsize=None)
+def _load_distilbert():
+    """Loads DistilBERT on first use only, so non-BERT models don't pay for it."""
+    from transformers import DistilBertTokenizer, DistilBertModel
 
-model = DistilBertModel.from_pretrained(
-    "distilbert-base-uncased",
-    cache_dir='model_files/bert_cache/'
-)
+    tokenizer = DistilBertTokenizer.from_pretrained(
+        "distilbert-base-uncased",
+        cache_dir='model_files/bert_cache/'
+    )
 
-# Do not use dropout while creating embeddings.
-model.eval()
+    model = DistilBertModel.from_pretrained(
+        "distilbert-base-uncased",
+        cache_dir='model_files/bert_cache/'
+    )
+
+    # Do not use dropout while creating embeddings.
+    model.eval()
+
+    return tokenizer, model
 
 
 def get_distilbert_embeddings(
@@ -38,6 +44,9 @@ def get_distilbert_embeddings(
         )
 
     _ = count_vectorizer
+
+    import torch
+    tokenizer, model = _load_distilbert()
 
     encoded_input = tokenizer(
         texts,
