@@ -26,6 +26,10 @@ slots: Dict[InfoRequestType, Slot] = {
     InfoRequestType.PRICE_RANGE: Slot(question="Would you like something cheap, moderate or expensive?"),
 }
 
+# Restaurants matching the current preferences, and which one we are currently suggesting.
+possible_restaurants: List[str] = []
+restaurant_index: int = 0
+
 def dialog_arg_parser() -> Dict[str, Any]:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
         prog=PROGRAM,
@@ -58,9 +62,22 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         else:
             return DialogState.ASK_PREFERENCES, get_repromt_for_missing_slots()
 
+    if state == DialogState.INFORM:
+        if dialog_act == DialogAct.CONFIRM or dialog_act == DialogAct.AFFIRM: # TODO: which one is correct? or both
+            return DialogState.CONFIRM, "Great! I'll reserve that for you."
+        if dialog_act == DialogAct.DENY or dialog_act == DialogAct.NEGATE:
+            return DialogState.INFORM, offer_restaurant_suggestion(next_restaurant=True)
+        if dialog_act == DialogAct.REQUEST:
+            return DialogState.INFORM, get_restaurant_details()
+        if dialog_act == DialogAct.RESTART:
+            return DialogState.INTRODUCTION, get_intro_sentence()
+    
+
+    # This is basically hit anytime once the user has confirmed or thank you. TODO: probably bugs with this. needs testing    
     return DialogState.END, "We'll pick a restaurant for you! Coming soon in theaters :)"
 
 #TODO: how to deal with dont care responses? ex. what kind of food do you want? i dont care
+#TODO: how to handle negating responses? ex. what kind of food do you want? i dont want chinese
 def handle_inform(utterance: str) -> Tuple[DialogState, str]:
     """Stores every preference extracted from the utterance, overwriting any value that was already stored.
     Then asks for the next missing preference, or suggests a restaurant once all are known."""
@@ -79,25 +96,46 @@ def handle_inform(utterance: str) -> Tuple[DialogState, str]:
         return DialogState.ASK_PREFERENCES, missing_slot.question
 
     # All preferences are known, so suggest a restaurant and let the user confirm it.
+    return DialogState.INFORM, offer_restaurant_suggestion()
+
+def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
+    global possible_restaurants, restaurant_index
+
     preferences = {}
     for info_request_type, slot in slots.items():
         preferences[info_request_type] = slot.value
-    restaurant_name = lookup_restaurant(preferences)
-    return DialogState.CONFIRM, restaurant_name + " is " + describe_restaurant(preferences) + ". Does that sound good?"
 
-def lookup_restaurant(preferences: Dict[InfoRequestType, str]) -> str:
-    return "The Placeholder Bistro"
+    if next_restaurant:
+        restaurant_index += 1
+    else:
+        possible_restaurants = find_restaurants(preferences)
+        restaurant_index = 0
+
+    if restaurant_index >= len(possible_restaurants):
+        return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + "."
+    return possible_restaurants[restaurant_index] + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
+
+def find_restaurants(preferences: Dict[InfoRequestType, str]) -> List[str]:
+    return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
+
+def get_restaurant_details() -> str:
+    #details = possible_restaurants[restaurant_index].details TODO: wait for Jesse to implement this
+    return "Phone number is 123-456-7890. Address is 123 Main St." 
 
 def next_missing_slot() -> Slot:
     for slot in slots.values():
         if not slot.filled:
             return slot
+    return None
 
 def get_intro_sentence() -> str:
     return "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?\nType QUIT to exit"
 
 def get_repromt_for_missing_slots() -> str:
-    return "Sorry I didn't catch that. " + next_missing_slot().question
+    missing_slot = next_missing_slot()
+    if missing_slot:
+        return "Sorry I didn't catch that. " + missing_slot.question
+    return "Sorry, I didn't understand. Could you please rephrase?"
 
 def describe_restaurant(preferences: Dict[InfoRequestType, str]) -> str:
     """Turns {PRICE_RANGE: "moderate", FOOD_TYPE: "french", AREA: "east"} into
