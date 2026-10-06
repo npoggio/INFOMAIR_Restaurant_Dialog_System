@@ -1,14 +1,13 @@
-
 import Levenshtein
 import pandas as pd
-from enums.restaurant_props import PriceRange, Area, Food
+from src.enums.restaurant_props import PriceRange, Area, Food
 
 restaurants = pd.read_csv("restaurant_info.csv")
 # if keyword_match fails check distances to 
 def levenshtein_distance(mismatched_keyword):
     possible_values = list(PriceRange) + list(Area) + list(Food)
     closest_match = None
-    lowest_value = float("inf")
+    lowest_distance = float("inf")
     for value in possible_values:
         distance = Levenshtein.distance(
             mismatched_keyword.lower(),
@@ -21,7 +20,7 @@ def levenshtein_distance(mismatched_keyword):
 
     return f"Did you maybe mean {closest_match.value}?"
 
-def 
+print(levenshtein_distance("exxpnsive"))
 
 
 
