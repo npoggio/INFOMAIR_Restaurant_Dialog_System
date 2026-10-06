@@ -1,4 +1,5 @@
 from typing import Any, Tuple
+from functools import lru_cache
 import joblib
 import os
 import json
@@ -13,8 +14,9 @@ def save_model(file_path, classifier, vectorizer):
     joblib.dump(model_bundle, file_path)
 
 
+@lru_cache(maxsize=None)
 def load_model(file_path) -> Tuple[Any, Any]:
-    """Loads classifer and vectorizer from a model file"""
+    """Loads classifer and vectorizer from a model file (cached per path)"""
     model = joblib.load(file_path)
 
     if not 'classifier' in model:
