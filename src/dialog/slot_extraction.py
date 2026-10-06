@@ -59,6 +59,7 @@ def extract_slots_keyword(utterance):
 
     return slots
 
+
 if __name__ == "__main__":
     print(
         extract_slots_keyword(

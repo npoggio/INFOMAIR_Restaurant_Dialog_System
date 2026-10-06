@@ -2,14 +2,21 @@ from typing import Dict, Any, List, Tuple
 import argparse
 import sys
 from src.enums.dialog_act import DialogAct
-from src.enums.info_request_type import InfoRequestType
+#from src.enums.info_request_type import InfoRequestType
 from src.run import run_str
 from src.enums.models import Models
 from src.enums.dialog_states import DialogState
+import src.enums.restaurant_props as rpe
 from src import PROGRAM, DESCRIPTION, MODEL_NAMES
+import src.utils.parser as upar
 from dataclasses import dataclass
 
 ALLOWED_MODELS = list(MODEL_NAMES.keys())
+
+#TEMP TODO: load this in on first instance
+file_path: str = 'data/restaurant_info_extended.csv'
+rest_data = upar.load_restaurant_data(file_path)
+
 
 @dataclass
 class Slot:
@@ -20,10 +27,10 @@ class Slot:
     def filled(self) -> bool:
         return self.value != ""
 
-slots: Dict[InfoRequestType, Slot] = {
-    InfoRequestType.FOOD_TYPE:   Slot(question="What kind of food would you like?"),
-    InfoRequestType.AREA:        Slot(question="What part of town do you have in mind?"),
-    InfoRequestType.PRICE_RANGE: Slot(question="Would you like something cheap, moderate or expensive?"),
+slots: Dict[rpe.StrEnum, Slot] = {
+    rpe.Food:        Slot(question="What kind of food would you like?"),
+    rpe.Area:        Slot(question="What part of town do you have in mind?"),
+    rpe.PriceRange:  Slot(question="Would you like something cheap, moderate or expensive?"),
 }
 
 # Restaurants matching the current preferences, and which one we are currently suggesting.
@@ -115,8 +122,12 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
         return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + "."
     return possible_restaurants[restaurant_index] + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
 
-def find_restaurants(preferences: Dict[InfoRequestType, str]) -> List[str]:
-    return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
+def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
+    #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
+    pref_ = {k.__name__.lower(): v for k, v in preferences.items()}
+    rests = upar.fetch_resturant_by_info(rest_data, **pref_)
+    print(rests)
+    return [r.title() for r in rests['restaurantname'].to_list()]
 
 def get_restaurant_details() -> str:
     #details = possible_restaurants[restaurant_index].details TODO: wait for Jesse to implement this
@@ -137,16 +148,16 @@ def get_repromt_for_missing_slots() -> str:
         return "Sorry I didn't catch that. " + missing_slot.question
     return "Sorry, I didn't understand. Could you please rephrase?"
 
-def describe_restaurant(preferences: Dict[InfoRequestType, str]) -> str:
+def describe_restaurant(preferences: Dict[rpe.StrEnum, str]) -> str:
     """Turns {PRICE_RANGE: "moderate", FOOD_TYPE: "french", AREA: "east"} into
     'a moderately priced French restaurant in the east of town'."""
     words = []
 
-    price_range = preferences.get(InfoRequestType.PRICE_RANGE)
+    price_range = preferences.get(rpe.PriceRange)
     if price_range:
         words.append("moderately priced" if price_range == "moderate" else price_range)
 
-    food_type = preferences.get(InfoRequestType.FOOD_TYPE)
+    food_type = preferences.get(rpe.Food)
     if food_type:
         words.append(food_type.title())
 
@@ -154,28 +165,34 @@ def describe_restaurant(preferences: Dict[InfoRequestType, str]) -> str:
     description = " ".join(words)
     description = ("an " if description[0].lower() in "aeiou" else "a ") + description
 
-    area = preferences.get(InfoRequestType.AREA)
+    area = preferences.get(rpe.Area)
     if area:
         description += f" in the {area} of town"
 
     return description
 
 # TEMPORARY: keyword lists for testing until the real slot extraction is implemented.
-TEMP_KEYWORDS: Dict[InfoRequestType, List[str]] = {
-    InfoRequestType.AREA:        ["north", "south", "east", "west", "centre"],
-    InfoRequestType.PRICE_RANGE: ["cheap", "moderate", "expensive"],
-    InfoRequestType.FOOD_TYPE:   ["italian", "chinese", "indian", "thai", "french", "british", "spanish", "japanese", "korean", "mexican"],
-}
+#TEMP_KEYWORDS: Dict[InfoRequestType, List[str]] = {
+#    InfoRequestType.AREA:        ["north", "south", "east", "west", "centre"],
+#    InfoRequestType.PRICE_RANGE: ["cheap", "moderate", "expensive"],
+#    InfoRequestType.FOOD_TYPE:   ["italian", "chinese", "indian", "thai", "french", "british", "spanish", "japanese", "korean", "mexican"],
+#}
 
-def extract_preferences(utterance: str) -> Dict[InfoRequestType, str]:
+TEMP_KEYWORDS: Tuple = [rpe.Area, rpe.PriceRange, rpe.Food]
+
+
+def extract_preferences(utterance: str) -> Dict[rpe.StrEnum, str]:
     # TEMPORARY: extract preferences from the utterance once madrie finishes slot extaction.
     words = utterance.lower().split()
     preferences = {}
-    for info_request_type, keywords in TEMP_KEYWORDS.items():
-        for keyword in keywords:
+    #for info_request_type, keywords in TEMP_KEYWORDS.items():
+    #    for keyword in keywords:
+    for rest_enum in TEMP_KEYWORDS:
+        for keyword in rest_enum:
             if keyword in words:
-                preferences[info_request_type] = keyword
+                preferences[rest_enum] = keyword
     return preferences
+
 
 def classify(model: Models, input_path: str, utterance: str) -> str:
     return DialogAct(run_str(model=model, input_path=input_path, phrases=[utterance])[0])
