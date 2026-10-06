@@ -188,10 +188,10 @@ dependencies:
       - termcolor==3.3.0
       - thinc==8.3.13
       - tokenizers==0.22.2
-      - torch==2.14.1+cu130
+      - torch==2.14.1
       - torchaudio==2.11.0
       - torchcodec==0.17.0
-      - torchvision==0.29.1+cu130
+      - torchvision==0.29.1
       - transformers==4.57.6
       - typeguard==4.6.0
       - typer==0.27.3
