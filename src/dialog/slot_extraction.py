@@ -1,37 +1,38 @@
 import re
 import csv
 from src.models.rule_based_baseline import contains_keyword
+import src.enums.restaurant_props as rpe
 
-DATA_PATH = "data/restaurant_info.csv"
-
-#used to collect all the different food types from restaurant_info.csv
-def get_food_types():
-    food_types = set()
-
-    with open(DATA_PATH, newline="", encoding="utf-8") as csvfile:
-        reader = csv.DictReader(csvfile)
-
-        for row in reader:
-            food_types.add(row["food"])
-
-    return sorted(food_types)
-
-
-FOOD_TYPES = get_food_types()
-
-PRICE_TYPES = (
-    "cheap",
-    "moderate",
-    "expensive",
-)
-
-AREAS = (
-    "north", 
-    "east",
-    "south",
-    "west",
-    "centre",
-)
+#DATA_PATH = "data/restaurant_info.csv"
+#
+##used to collect all the different food types from restaurant_info.csv
+#def get_food_types():
+#    food_types = set()
+#
+#    with open(DATA_PATH, newline="", encoding="utf-8") as csvfile:
+#        reader = csv.DictReader(csvfile)
+#
+#        for row in reader:
+#            food_types.add(row["food"])
+#
+#    return sorted(food_types)
+#
+#
+#FOOD_TYPES = get_food_types()
+#
+#PRICE_TYPES = (
+#    "cheap",
+#    "moderate",
+#    "expensive",
+#)
+#
+#AREAS = (
+#    "north", 
+#    "east",
+#    "south",
+#    "west",
+#    "centre",
+#)
 
 def extract_slots_keyword(utterance):
     text = utterance.lower()
@@ -39,24 +40,25 @@ def extract_slots_keyword(utterance):
     slots = {}
 
     #food slot
-    for food in FOOD_TYPES:
+    for food in rpe.Food:
         if contains_keyword(text, food):
             slots["food"] = food
             break
 
     #price slot
-    for price in PRICE_TYPES: 
+    for price in rpe.PriceRange: 
         if contains_keyword(text, price):
             slots["pricerange"] = price
             break
 
     #area slot
-    for area in AREAS:
+    for area in rpe.Area:
         if contains_keyword(text, area):
             slots["area"] = area
             break
 
     return slots
+
 
 if __name__ == "__main__":
     print(
