@@ -15,6 +15,7 @@ from dataclasses import dataclass
 ALLOWED_MODELS = list(MODEL_NAMES.keys())
 INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
 INTRO_PROMPT: str = "\nType QUIT to exit"  # Will never be read by TTS
+intro_agg: str = INTO_SENTENCE + INTRO_PROMPT
 
 #TEMP TODO: load this in on first instance
 file_path: str = 'data/restaurant_info_extended.csv'
@@ -62,7 +63,7 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         if dialog_act == DialogAct.INFORM or extract_preferences(utterance):
             return handle_inform(utterance)
         if dialog_act == DialogAct.HELLO:
-            return DialogState.INTRODUCTION, get_intro_sentence()
+            return DialogState.INTRODUCTION, INTO_SENTENCE
         if dialog_act == DialogAct.BYE:
             return DialogState.END, "Goodbye!"
         return DialogState.INTRODUCTION, get_repromt_for_missing_slots()
@@ -81,7 +82,7 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         if dialog_act == DialogAct.REQUEST:
             return DialogState.INFORM, get_restaurant_details()
         if dialog_act == DialogAct.RESTART:
-            return DialogState.INTRODUCTION, get_intro_sentence()
+            return DialogState.INTRODUCTION, intro_agg
     
 
     # This is basically hit anytime once the user has confirmed or thank you. TODO: probably bugs with this. needs testing    
