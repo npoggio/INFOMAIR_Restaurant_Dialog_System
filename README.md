@@ -6,37 +6,31 @@ We were told not to use notebooks for this project. However to create the graphs
 
 ## Environment Setup
 
-Create the Mamba environment in the MiniForge Prompt using:
+Create the Conda environment in the MiniForge Prompt using:
 
 ```bash
-mamba env create -f environment.yml
+conda env create -f environment.yml
 ```
 
 Activate the environment:
 
 ```bash
-mamba activate infomair
-```
-
-If that doesn't work you might need to allow the console to run mamba commands with 
-
-```bash
-mamba shell init --shell powershell --root-prefix=~/.local/share/mamba
+conda activate infomair
 ```
 
 To deactivate the environment:
 
 ```bash
-mamba deactivate
+conda deactivate
 ```
 
 
 ## Updating the Environment
 
-When adding a new dependency, install it with Mamba:
+When adding a new dependency, install it with Conda:
 
 ```bash
-mamba install <package-name>
+conda install <package-name>
 ```
 
 Then add the package to the `dependencies` section of `environment.yml` and commit the change.
@@ -44,7 +38,7 @@ Then add the package to the `dependencies` section of `environment.yml` and comm
 After pulling an updated `environment.yml`, update your existing environment with:
 
 ```bash
-mamba env update -f environment.yml
+conda env update -f environment.yml
 ```
 
 ## Data Insertion

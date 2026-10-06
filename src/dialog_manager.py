@@ -8,6 +8,7 @@ from src.enums.models import Models
 from src.enums.dialog_states import DialogState
 import src.enums.restaurant_props as rpe
 from src import PROGRAM, DESCRIPTION, MODEL_NAMES
+from src.utils import tts
 import src.utils.parser as upar
 from dataclasses import dataclass
 
@@ -46,6 +47,7 @@ def dialog_arg_parser() -> Dict[str, Any]:
     # Model
     parser.add_argument('-m', '--model',
                         type=str, required=True, help='Model types', choices=ALLOWED_MODELS)
+    parser.add_argument('--tts', action='store_true',)
 
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
@@ -126,7 +128,6 @@ def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
     #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
     pref_ = {k.__name__.lower(): v for k, v in preferences.items()}
     rests = upar.fetch_resturant_by_info(rest_data, **pref_)
-    print(rests)
     return [r.title() for r in rests['restaurantname'].to_list()]
 
 def get_restaurant_details() -> str:
@@ -178,7 +179,7 @@ def describe_restaurant(preferences: Dict[rpe.StrEnum, str]) -> str:
 #    InfoRequestType.FOOD_TYPE:   ["italian", "chinese", "indian", "thai", "french", "british", "spanish", "japanese", "korean", "mexican"],
 #}
 
-TEMP_KEYWORDS: Tuple = [rpe.Area, rpe.PriceRange, rpe.Food]
+TEMP_KEYWORDS: Tuple = (rpe.Area, rpe.PriceRange, rpe.Food)
 
 
 def extract_preferences(utterance: str) -> Dict[rpe.StrEnum, str]:
@@ -200,6 +201,8 @@ def classify(model: Models, input_path: str, utterance: str) -> str:
 
 if __name__ == '__main__':
     kwargs = dialog_arg_parser()
+    if kwargs['tts']:
+        tts.load_pipeline()
 
     model_name = kwargs['model']
     input_path = f'model_files/{model_name}.joblib'
@@ -217,7 +220,10 @@ if __name__ == '__main__':
 
         dialog_act = classify(model, input_path, user_input)
         state, system_utterance = state_transition(state, dialog_act, user_input)
+        
         print(f'System: {system_utterance}')
+        if kwargs['tts']:
+            tts.gen_and_play_tts(system_utterance)
 
         if state == DialogState.END:
             break
