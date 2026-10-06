@@ -2,6 +2,7 @@ from typing import Optional
 from functools import lru_cache
 from sklearn.feature_extraction.text import CountVectorizer
 from typing import List
+from transformers import DistilBertTokenizer, DistilBertModel
 
 import numpy as np
 
@@ -56,7 +57,6 @@ def get_distilbert_embeddings(
     _ = count_vectorizer
 
     import torch
-    tokenizer, model = _load_distilbert()
 
     encoded_input = tokenizer(
         texts,
