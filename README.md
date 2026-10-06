@@ -80,6 +80,11 @@ You can use the models with your phrases by running the following command, where
 python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best Italian place in my neighbourhood?"
 > ['request']
 ```
+Generally -i is not needed for the rule-based model, as it does not require a trained model file. The command for the rule-based model is as follows:
+```bash
+python -m src.run -m rb -p "Where is the best Italian place in my neighbourhood?"
+> ['request']
+```
 
 You can also pass multiple sentences to the model, and it will return a list of predictions for each sentence.
 
@@ -91,15 +96,20 @@ python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best
 Alternatively, you can pass a file with phrases to the model, and it will return a list of predictions for each phrase in the file. The input file should be a .txt file with one phrase per line. Or a .dat file, which can be evaluated too. 
 
 ```bash
-python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/example_phrases.txt
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -d data/example_phrases.txt
 > ['hello', 'inform']
 ```
 
-An accuracy report can be generated for a .dat file with the `--evaluate` flag, which will output a report per class and write to the `model_files/` directory. The report will also be printed to the console.
+An accuracy report can be generated for a .dat file with the `--evaluate` flag, which will output a report per class and write to the `model_files/` directory. The report will also be printed to the console. Note that `-i` has to be specified with a directory or model file that the evaluation json file will be saved in, and `-d` has to be specified with the .dat file.
 
 ```bash
-python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/dialog_acts.dat --evaluate
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -d data/dialog_acts.dat --evaluate
 ```
+When you want to only use a part of the dataset provided you can specify a test-split (`--test_split`), split seed (`--tts_seed`) and whether to use a grouped split (`-g`) or not. The following command will use 15% of the dataset for testing, with a random seed of 12345 and a grouped split.:
+```bash
+python -m src.run -m rb -i model_files/rb_ --evaluate -d data/dialog_acts.dat --test_split 0.15 --tts_seed 12345 -g
+```
+
 
 Lastly, you can also have an interactive console where you can type in phrases and get predictions for each phrase. The console will exit when you type `exit` or `quit`. 
 
