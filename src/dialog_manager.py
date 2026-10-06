@@ -13,6 +13,8 @@ import src.utils.parser as upar
 from dataclasses import dataclass
 
 ALLOWED_MODELS = list(MODEL_NAMES.keys())
+INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
+INTRO_PROMPT: str = "\nType QUIT to exit"  # Will never be read by TTS
 
 #TEMP TODO: load this in on first instance
 file_path: str = 'data/restaurant_info_extended.csv'
@@ -140,9 +142,6 @@ def next_missing_slot() -> Slot:
             return slot
     return None
 
-def get_intro_sentence() -> str:
-    return "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?\nType QUIT to exit"
-
 def get_repromt_for_missing_slots() -> str:
     missing_slot = next_missing_slot()
     if missing_slot:
@@ -195,8 +194,14 @@ def extract_preferences(utterance: str) -> Dict[rpe.StrEnum, str]:
     return preferences
 
 
-def classify(model: Models, input_path: str, utterance: str) -> str:
+def classify(model: Models, input_path: str, utterance: str) -> DialogAct:
     return DialogAct(run_str(model=model, input_path=input_path, phrases=[utterance])[0])
+
+
+def output_to_user(system_utterance, do_tts):
+    print(f'System: {system_utterance}')
+    if do_tts:
+        tts.gen_and_play_tts(system_utterance)
 
 
 if __name__ == '__main__':
@@ -209,7 +214,9 @@ if __name__ == '__main__':
 
     model = MODEL_NAMES[model_name]
 
-    print(get_intro_sentence())
+    output_to_user(INTO_SENTENCE, kwargs['tts'])
+    output_to_user(INTRO_PROMPT, do_tts=False)
+
     state = DialogState.INTRODUCTION
 
     while True:
@@ -218,12 +225,10 @@ if __name__ == '__main__':
         if user_input == 'QUIT':
             break
 
-        dialog_act = classify(model, input_path, user_input)
+        dialog_act: DialogAct = classify(model, input_path, user_input)
         state, system_utterance = state_transition(state, dialog_act, user_input)
         
-        print(f'System: {system_utterance}')
-        if kwargs['tts']:
-            tts.gen_and_play_tts(system_utterance)
+        output_to_user(system_utterance, kwargs['tts'])
 
         if state == DialogState.END:
             break
