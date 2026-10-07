@@ -1,5 +1,8 @@
 from enum import StrEnum
 
+# The names of these enums matter and should not be changed as the restaurant
+# fetching logic depends on them for column names :)
+
 
 class PriceRange(StrEnum):
     CHEAP = 'cheap'
@@ -54,7 +57,7 @@ class Food(StrEnum):
     CATALAN = 'catalan'
 
 
-class FoodQuality(StrEnum):
+class Food_Quality(StrEnum):
     GOOD = 'good'
     MEDIOCRE = 'mediocre'
 
@@ -64,6 +67,7 @@ class Crowdedness(StrEnum):
     BUSY = 'busy'
 
 
-class LengthOfStay(StrEnum):
+class Length_Of_Stay(StrEnum):
     LONG = 'long'
     SHORT = 'short'
+

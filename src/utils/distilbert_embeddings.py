@@ -1,16 +1,16 @@
 from typing import Optional
-from transformers import DistilBertTokenizer, DistilBertModel
+from functools import lru_cache
 from sklearn.feature_extraction.text import CountVectorizer
 from typing import List
+from transformers import DistilBertTokenizer, DistilBertModel
 
 import numpy as np
-import torch
 
 BERT_LOADED: bool = False
 tokenizer: DistilBertTokenizer
 model: DistilBertModel
 
-
+@lru_cache(maxsize=None)
 def load_model():
     global BERT_LOADED
     BERT_LOADED = True
@@ -30,6 +30,8 @@ def load_model():
 
     # Do not use dropout while creating embeddings.
     model.eval()
+
+    return tokenizer, model
 
 
 def get_distilbert_embeddings(
@@ -53,6 +55,8 @@ def get_distilbert_embeddings(
         )
 
     _ = count_vectorizer
+
+    import torch
 
     encoded_input = tokenizer(
         texts,

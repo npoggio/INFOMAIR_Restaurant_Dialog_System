@@ -1,8 +1,8 @@
 """A module to write parsers in that will be used to read .dat files"""
 from typing import List, Tuple, Optional, Iterable
 from src.enums.restaurant_props import (
-    PriceRange, Area, Food, FoodQuality, 
-    Crowdedness, LengthOfStay )
+    PriceRange, Area, Food, Food_Quality, 
+    Crowdedness, Length_Of_Stay )
 import enum
 import numpy as np
 import pandas as pd
@@ -114,9 +114,9 @@ def fetch_resturant_by_info(
         phone: Optional[str] = None,
         addr: Optional[str] = None,
         postcode: Optional[str] = None,
-        food_quality: Optional[FoodQuality|Iterable[FoodQuality]] = None,
+        food_quality: Optional[Food_Quality|Iterable[Food_Quality]] = None,
         crowdedness: Optional[Crowdedness|Iterable[Crowdedness]] = None,
-        length_of_stay: Optional[LengthOfStay|Iterable[LengthOfStay]] = None,):
+        length_of_stay: Optional[Length_Of_Stay|Iterable[Length_Of_Stay]] = None,):
     """
     Fetch the restaurants with the corresponding values, 
     a list can be passed into the slots to indicate multiple options (OR)
