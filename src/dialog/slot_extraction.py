@@ -32,19 +32,19 @@ def extract_slots_keyword(utterance):
 
     slots = {}
 
-    # Food slot
+    #Food slot
     for food in Food:
         if contains_keyword(text, food.value):
             slots["food"] = food.value
             break
 
-    # Price slot
+    #Price slot
     for price in PriceRange:
         if contains_keyword(text, price.value):
             slots["pricerange"] = price.value
             break
 
-    # Area slot
+    #Area slot
     for area in Area:
         if contains_keyword(text, area.value):
             slots["area"] = area.value
@@ -77,7 +77,6 @@ def levenshtein_distance(mismatched_keyword):
 def find_semantic_match(text, possible_values, threshold=0.7):
     possible_values = list(possible_values)
 
-    # Convert enum values to strings
     value_texts = [value.value for value in possible_values]
 
     texts = [text] + value_texts
@@ -111,7 +110,7 @@ def extract_slots_semantic(utterance, threshold=0.7):
 
     slots = {}
 
-    # Food
+    #Food
     for word in words:
         match = find_semantic_match(
             word,
@@ -123,7 +122,7 @@ def extract_slots_semantic(utterance, threshold=0.7):
             slots["food"] = match
             break
 
-    # Price
+    #Price
     for word in words:
         match = find_semantic_match(
             word,
@@ -135,7 +134,7 @@ def extract_slots_semantic(utterance, threshold=0.7):
             slots["pricerange"] = match
             break
 
-    # Area
+    #Area
     for word in words:
         match = find_semantic_match(
             word,
