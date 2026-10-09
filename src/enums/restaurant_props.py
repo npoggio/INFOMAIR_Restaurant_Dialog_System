@@ -18,6 +18,10 @@ class Area(StrEnum):
     WEST = 'west'
 
 
+class Not_Food(StrEnum):
+    ROMANIAN = 'romanian'
+
+
 class Food(StrEnum):
     BRITISH = 'british'
     MODERN_EUROPEAN = 'modern european'
@@ -71,3 +75,22 @@ class Length_Of_Stay(StrEnum):
     LONG = 'long'
     SHORT = 'short'
 
+
+class Touristic(StrEnum):
+    YES = 'yes'
+    NO = 'no'
+
+
+class Assigned_Seats(StrEnum):
+    YES = 'yes'
+    NO = 'no'
+
+
+class Children(StrEnum):
+    YES = 'yes'
+    NO = 'no'
+
+
+class Romantic(StrEnum):
+    YES = 'yes'
+    NO = 'no'

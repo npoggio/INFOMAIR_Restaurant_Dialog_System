@@ -2,7 +2,7 @@
 from typing import List, Tuple, Optional, Iterable
 from src.enums.restaurant_props import (
     PriceRange, Area, Food, Food_Quality, 
-    Crowdedness, Length_Of_Stay )
+    Crowdedness, Length_Of_Stay, Not_Food )
 import enum
 import numpy as np
 import pandas as pd
@@ -116,7 +116,8 @@ def fetch_resturant_by_info(
         postcode: Optional[str] = None,
         food_quality: Optional[Food_Quality|Iterable[Food_Quality]] = None,
         crowdedness: Optional[Crowdedness|Iterable[Crowdedness]] = None,
-        length_of_stay: Optional[Length_Of_Stay|Iterable[Length_Of_Stay]] = None,):
+        length_of_stay: Optional[Length_Of_Stay|Iterable[Length_Of_Stay]] = None,
+        not_food: Optional[Not_Food|Iterable[Not_Food]] = None):
     """
     Fetch the restaurants with the corresponding values, 
     a list can be passed into the slots to indicate multiple options (OR)
@@ -128,11 +129,21 @@ def fetch_resturant_by_info(
         if colname.startswith('_'): continue
         if filtervalue is None: continue
 
+        colname = colname.replace('_', ' ')
+
         # When a list is passed you can pass multiple values
         if isinstance(filtervalue, Iterable) and not isinstance(filtervalue, (enum.Enum, str)):
-            mask = _restaurant_info[colname].isin(filtervalue)
+            if not colname.startswith('not '):
+                mask = _restaurant_info[colname].isin(filtervalue)
+            else:
+                colname = colname.removeprefix('not ')
+                mask = ~_restaurant_info[colname].isin(filtervalue)
         else:
-            mask = _restaurant_info[colname] == filtervalue
+            if not colname.startswith('not '):
+                mask = _restaurant_info[colname] == filtervalue
+            else:
+                colname = colname.removeprefix('not ')
+                mask = _restaurant_info[colname] != filtervalue
 
         _restaurant_info = _restaurant_info[mask]
 
@@ -146,13 +157,14 @@ if __name__ == '__main__':
     restaurants = fetch_resturant_by_info(
         rest_data,
         restaurantname = None,
-        pricerange = None,
-        area = Area.CENTRE,
-        food = [Food.ASIAN_ORIENTAL, Food.ITALIAN],
+        pricerange = PriceRange.MODERATE,
+        area = Area.WEST,
+        food = None,
         postcode = None,
         food_quality = None,
         crowdedness = Crowdedness.BUSY,
-        length_of_stay = None,
+        length_of_stay = Length_Of_Stay.LONG,
+        not_food = Not_Food.ROMANIAN
     )
 
     print(restaurants)
