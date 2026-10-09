@@ -71,3 +71,6 @@ class Length_Of_Stay(StrEnum):
     LONG = 'long'
     SHORT = 'short'
 
+class RestaurantInfoType(StrEnum):
+    PHONE_NUMBER = 'phone number'
+    ADDRESS = 'address'

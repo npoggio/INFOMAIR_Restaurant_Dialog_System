@@ -3,6 +3,7 @@ import argparse
 import sys
 from src.enums.dialog_act import DialogAct
 #from src.enums.info_request_type import InfoRequestType
+from src.enums.restaurant_props import RestaurantInfoType
 from src.run import run_str
 from src.enums.models import Models
 from src.enums.dialog_states import DialogState
@@ -80,7 +81,14 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         if dialog_act == DialogAct.DENY or dialog_act == DialogAct.NEGATE:
             return DialogState.INFORM, offer_restaurant_suggestion(next_restaurant=True)
         if dialog_act == DialogAct.REQUEST:
-            return DialogState.INFORM, get_restaurant_details()
+            # TODO: get better keywords instead of just phone and address
+            detail_type: RestaurantInfoType = None
+            if "phone" in utterance.lower() or "number" in utterance.lower():
+                detail_type = RestaurantInfoType.PHONE_NUMBER
+            elif "address" in utterance.lower() or "location" in utterance.lower():
+                detail_type = RestaurantInfoType.ADDRESS
+
+            return DialogState.INFORM, get_restaurant_details(detail_type=detail_type)
         if dialog_act == DialogAct.RESTART:
             return DialogState.INTRODUCTION, intro_agg
     
@@ -89,7 +97,6 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
     return DialogState.END, "We'll pick a restaurant for you! Coming soon in theaters :)"
 
 #TODO: how to deal with dont care responses? ex. what kind of food do you want? i dont care
-#TODO: how to handle negating responses? ex. what kind of food do you want? i dont want chinese
 def handle_inform(utterance: str) -> Tuple[DialogState, str]:
     """Stores every preference extracted from the utterance, overwriting any value that was already stored.
     Then asks for the next missing preference, or suggests a restaurant once all are known."""
@@ -133,9 +140,14 @@ def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
     rests = upar.fetch_resturant_by_info(rest_data, **pref_)
     return [r.title() for r in rests['restaurantname'].to_list()]
 
-def get_restaurant_details() -> str:
+def get_restaurant_details(detail_type: RestaurantInfoType = None) -> str:
     #details = possible_restaurants[restaurant_index].details TODO: wait for Jesse to implement this
-    return "Phone number is 123-456-7890. Address is 123 Main St." 
+    if detail_type == RestaurantInfoType.PHONE_NUMBER:
+        return "Phone number is 123-456-7890."
+    elif detail_type == RestaurantInfoType.ADDRESS:
+        return "Address is 123 Main St."
+    else:
+        return "Phone number is 123-456-7890. Address is 123 Main St."
 
 def next_missing_slot() -> Slot:
     for slot in slots.values():
@@ -227,6 +239,7 @@ if __name__ == '__main__':
             break
 
         dialog_act: DialogAct = classify(model, input_path, user_input)
+        print(dialog_act)
         state, system_utterance = state_transition(state, dialog_act, user_input)
         
         output_to_user(system_utterance, kwargs['tts'])
