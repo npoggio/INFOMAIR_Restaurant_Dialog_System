@@ -30,7 +30,7 @@ def levenshtein_distance(sentence):
 
     return f"Did you maybe mean {closest_match.value}?"
 
-print(levenshtein_distance("do you have cheap sponish food"))
+print(levenshtein_distance("do you have cheap sponnish food"))
 
 
 from src.utils.distilbert_embeddings import get_distilbert_embeddings
