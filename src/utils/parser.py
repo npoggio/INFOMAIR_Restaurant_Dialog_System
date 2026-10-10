@@ -5,6 +5,8 @@ from src.enums.restaurant_props import (
     Crowdedness, Length_Of_Stay, Not_Food )
 import enum
 import numpy as np
+import sys
+import time
 import pandas as pd
 import inspect
 
@@ -150,6 +152,31 @@ def fetch_resturant_by_info(
     return _restaurant_info
 
 
+def enable_gpt_like_typing():
+    avg = 0.15
+    std = 0.15
+    splitchar = ' '
+
+    def gpt_like_typing(*args, sep=' ', end='\n'):
+        texts = [str(arg) for arg in args]
+        joined_text = sep.join(texts)
+        split_text = joined_text.split(splitchar)
+
+        random_duration = np.maximum(0.1, np.random.normal(avg, std, len(split_text)))
+        
+        for part, wait_time in zip(split_text, random_duration):
+            sys.stdout.write(str(part) + splitchar)
+            sys.stdout.flush()
+            time.sleep(wait_time)
+
+        sys.stdout.write(end)
+
+    global print
+    print = gpt_like_typing
+    return gpt_like_typing
+
+
+
 # For testing, wil only run when this module is called upon specifically
 if __name__ == '__main__':
     file_path: str = 'data/restaurant_info_extended.csv'
@@ -166,8 +193,6 @@ if __name__ == '__main__':
         length_of_stay = Length_Of_Stay.LONG,
         not_food = Not_Food.ROMANIAN
     )
-
-    print(restaurants)
 
     #for col in rd:
     #    print("========", col)

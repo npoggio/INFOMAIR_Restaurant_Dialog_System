@@ -1,5 +1,6 @@
-from typing import Dict
+from typing import Dict, List
 from enum import StrEnum
+from itertools import combinations
 from src.enums.restaurant_props import (
     Area, PriceRange, Food, Romantic, Not_Food,
     Touristic, Assigned_Seats, Children,
@@ -37,16 +38,28 @@ from src.enums.restaurant_props import (
 #        return Assigned_Seats.NO
 
 
-__TOURISTIC_TEXT = "a touristy restaurant"
-__CHILDREN_TEXT = "a child friendly restaurant"
-__ASSIGNED_SEATS_TEXT = "a restaurant with assigned seats"
-__ROMANTIC_TEXT = "a romantic place"
-__AGG_PREFS_TEXT = "{confl_prefl} or a {confl_prefr} {confl_class}"
+TEXTS_INDIPENDANT = {
+    Touristic: "a touristy restaurant",
+    Children: "a child friendly restaurant",
+    Assigned_Seats: "a restaurant with assigned seats",
+    Romantic: "a romantic place",
+}
+TEXTS_COMBINED = {
+    Touristic: "a touristy",
+    Children: "a child friendly",
+    Assigned_Seats: "an assigned-seat",
+    Romantic: "a romantic",
+}
 
+
+__GENERIC_QUERY = ""
+__AGG_PREFS_TEXT = "{confl_prefl} or a {confl_prefr} {confl_class}"
 __CONFLICTING_Q0 = "You mentioned you'd like a {confl_prefl} {confl_class} restaurant. However, this conflicts with your " \
 "{confl_class} preference of {confl_prefr}. Would you like a {agg_prefs} restaurant"
 __CONFLICTING_Q1 = "You mentioned you'd like {logic_pref}. However, this conflicts with your " \
 "{confl_class} preference of {confl_prefr}. Would you like a {agg_prefs} restaurant"
+__CONFLICTING_P_REASON = "You mentioned you'd like {logic_prefs} restaurant. However, these preferences clash in a couple of areas: "
+
 
 def ask_to_resolve_conflicting(conflicting_class, 
                                conflicticn_values,
@@ -92,6 +105,7 @@ def ask_to_resolve_conflicting(conflicting_class,
     return out
 
 
+
 def find_conflicting(pref_default: Dict[StrEnum, str], pref_logic: Dict[StrEnum, str]):
     overlapping_keys = pref_default.keys() & pref_logic.keys()
     conflicting_keys = {
@@ -100,6 +114,23 @@ def find_conflicting(pref_default: Dict[StrEnum, str], pref_logic: Dict[StrEnum,
     }
 
     return conflicting_keys
+
+
+def check_for_conflicting_reasonings(reasonings: List[Dict[StrEnum, str]]):
+    reasoning_conflicts = {}
+
+    # Compare all 
+    for (reas_a), (reas_b) in combinations(reasonings, 2):
+        conflicts = find_conflicting(reas_a, reas_b)
+        if len(conflicts) == 0:
+            continue
+
+        reasoning_conflicts.update(conflicts)
+
+    return reasoning_conflicts
+
+
+def reasoning_dialog_manager():
 
 
 TOURISTIC = {
@@ -126,10 +157,12 @@ if __name__ == '__main__':
     confl = find_conflicting(ROMANTIC, ASSIGNED_SEATS)
 
 
-    for conflicting_class, conflicting_values in confl.items():
-        cq = ask_to_resolve_conflicting(conflicting_class,
-                                   conflicting_values,
-                                   romantic=True,
-                                   assigned_seats=True)
-        print(cq)
+    check_for_conflicting_reasonings((ROMANTIC, ASSIGNED_SEATS, CHILDREN))
+
+    #for conflicting_class, conflicting_values in confl.items():
+    #    cq = ask_to_resolve_conflicting(conflicting_class,
+    #                               conflicting_values,
+    #                               romantic=True,
+    #                               assigned_seats=True)
+    #    print(cq)
     #print(confl)
