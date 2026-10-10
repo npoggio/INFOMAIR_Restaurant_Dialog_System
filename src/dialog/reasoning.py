@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Iterable, Optional, Tuple
 from enum import StrEnum
 from itertools import combinations
 from src.enums.restaurant_props import (
@@ -37,29 +37,39 @@ from src.enums.restaurant_props import (
 #    else:
 #        return Assigned_Seats.NO
 
+REASONING_SLOTS = (Touristic, Children, Assigned_Seats, Romantic)
 
-TEXTS_INDIPENDANT = {
-    Touristic: "a touristy restaurant",
-    Children: "a child friendly restaurant",
-    Assigned_Seats: "a restaurant with assigned seats",
-    Romantic: "a romantic place",
-}
-TEXTS_COMBINED = {
+LOGIC_TEXTS = {
     Touristic: "a touristy",
     Children: "a child friendly",
     Assigned_Seats: "an assigned-seat",
     Romantic: "a romantic",
 }
 
+REASONING_EXPLOSION = {
+    Touristic: {
+        PriceRange: PriceRange.CHEAP,
+        Food_Quality: Food_Quality.GOOD,
+        Not_Food: Not_Food.ROMANIAN
+    },
+    Children: {
+        Length_Of_Stay: Length_Of_Stay.SHORT
+    },
+    Assigned_Seats: {
+        Crowdedness: Crowdedness.BUSY
+    },
+    Romantic: {
+        Crowdedness: Crowdedness.NOT_BUSY,
+        Length_Of_Stay: Length_Of_Stay.LONG
+    }
+}
 
-__GENERIC_QUERY = ""
 __AGG_PREFS_TEXT = "{confl_prefl} or a {confl_prefr} {confl_class}"
 __CONFLICTING_Q0 = "You mentioned you'd like a {confl_prefl} {confl_class} restaurant. However, this conflicts with your " \
-"{confl_class} preference of {confl_prefr}. Would you like a {agg_prefs} restaurant"
-__CONFLICTING_Q1 = "You mentioned you'd like {logic_pref}. However, this conflicts with your " \
-"{confl_class} preference of {confl_prefr}. Would you like a {agg_prefs} restaurant"
-__CONFLICTING_P_REASON = "You mentioned you'd like {logic_prefs} restaurant. However, these preferences clash in a couple of areas: "
+"another indicated preference of {confl_prefr}. Would you like a {confl_prefl} or {confl_prefr} restaurant?"
+_CONFLICTING_QR = "You mentioned you'd like {logic_prefl} and {logic_prefr} restaurant. However, this clashes in the form of {confl_class}. Would you like {prefl} or {prefr}"
 
+reasoning_slots_filter = lambda enum, slot: (issubclass(enum, REASONING_SLOTS)) and (str(slot.value) == 'yes')
 
 def ask_to_resolve_conflicting(conflicting_class, 
                                conflicticn_values,
@@ -105,6 +115,35 @@ def ask_to_resolve_conflicting(conflicting_class,
     return out
 
 
+def ask_to_resolve_conflicting_reasonings(conflicting_reasonings: Dict[StrEnum, Tuple[Tuple[StrEnum, StrEnum], Tuple[str, str]]]):
+    handled_enums = set()
+    
+    for confl_class, ((logic_prefl, logic_prefr), (prefl, prefr)) in conflicting_reasonings.items():
+        if confl_class in handled_enums:
+            continue
+
+        question = _CONFLICTING_QR.format(
+            logic_prefl=LOGIC_TEXTS[logic_prefl], 
+            logic_prefr=LOGIC_TEXTS[logic_prefr], 
+            confl_class=confl_class.__name__.lower().replace('_', ' '), 
+            prefl=prefl, 
+            prefr=prefr
+        )
+
+        handled_enums.add(confl_class)  # type: ignore
+        yield (confl_class, question)
+    return handled_enums
+
+
+def ask_to_resolve_generic_reasonings(conflicts):
+    for enum_class, (confl_prefl, confl_prefr) in conflicts.items():
+        question = __CONFLICTING_Q0.format(
+            confl_class = enum_class.__name__.lower().replace('_', ' '),
+            confl_prefl = confl_prefl.value,
+            confl_prefr = confl_prefr.value
+        )
+        yield enum_class, question
+
 
 def find_conflicting(pref_default: Dict[StrEnum, str], pref_logic: Dict[StrEnum, str]):
     overlapping_keys = pref_default.keys() & pref_logic.keys()
@@ -116,53 +155,85 @@ def find_conflicting(pref_default: Dict[StrEnum, str], pref_logic: Dict[StrEnum,
     return conflicting_keys
 
 
-def check_for_conflicting_reasonings(reasonings: List[Dict[StrEnum, str]]):
+def check_for_conflicting_reasonings(reasonings: List[Dict[StrEnum, str]], 
+                                     reasoning_classes: List[StrEnum]) -> Dict[StrEnum, Tuple[Tuple[StrEnum, StrEnum], Tuple[str, str]]]:
+    """
+    Returns a dictionary of all the conflicting Slot Categories as keys and a pair of values with the first being a tuple
+    of two reasoning options (i.e. Romantic, Assigned_Seats) and a second pair of the options.
+    """
     reasoning_conflicts = {}
+    embedded_reasonings = zip(reasoning_classes, reasonings)
 
     # Compare all 
-    for (reas_a), (reas_b) in combinations(reasonings, 2):
+    for (reas_class_a, reas_a), (reas_class_b, reas_b) in combinations(embedded_reasonings, 2):
         conflicts = find_conflicting(reas_a, reas_b)
         if len(conflicts) == 0:
             continue
 
-        reasoning_conflicts.update(conflicts)
+        updated_conflicts = {conflict_enum: ((reas_class_a, reas_class_b), conflict_values) 
+                             for conflict_enum, conflict_values in conflicts.items()}
+        reasoning_conflicts.update(updated_conflicts)
 
     return reasoning_conflicts
 
 
-def reasoning_dialog_manager():
+def generic_dialog_handler(preferences_a, preferences_b):
+    non_reasoning_slots_a = {enum: slot for enum, slot in preferences_a.items() if not reasoning_slots_filter(enum, slot)}
+    non_reasoning_slots_b = {enum: slot for enum, slot in preferences_b.items() if not reasoning_slots_filter(enum, slot)}
+    conflicts = find_conflicting(non_reasoning_slots_a, non_reasoning_slots_b)
+
+    return ask_to_resolve_generic_reasonings(conflicts)
 
 
-TOURISTIC = {
-    PriceRange: PriceRange.CHEAP,
-    Food_Quality: Food_Quality.GOOD,
-    Not_Food: Not_Food.ROMANIAN
-}
+def reasoning_dialog_handler(slots: Dict[StrEnum, 'Slot'], reasoning_slots_out):
+    # Get all reasoning slots, explode them and check for conflicts
+    reasoning_slots = {enum: slot for enum, slot in slots.items() if reasoning_slots_filter(enum, slot)}
+    exploded_reasoning_slots = [REASONING_EXPLOSION[slot] for slot in reasoning_slots]
+    [reasoning_slots_out.update(reasoning_slot_exploded) for reasoning_slot_exploded in exploded_reasoning_slots]
+    exploded_reasoning_classes = list(reasoning_slots.keys())
 
-CHILDREN = {
-    Length_Of_Stay: Length_Of_Stay.SHORT
-}
+    conflicting_reasonings = check_for_conflicting_reasonings(exploded_reasoning_slots, exploded_reasoning_classes)
+    return ask_to_resolve_conflicting_reasonings(conflicting_reasonings)
 
-ASSIGNED_SEATS = {
-    Crowdedness: Crowdedness.BUSY
-}
 
-ROMANTIC = {
-    Crowdedness: Crowdedness.NOT_BUSY,
-    Length_Of_Stay: Length_Of_Stay.LONG
-}
+# @TODO: ADD SLOT EXTRACTION!
+def reasoning(slots) -> Dict[StrEnum, str]:
+    slots = slots.copy()
+    new_slots = {}
+    reason_question_generator = reasoning_dialog_handler(slots, reasoning_slots_out=new_slots)
+    slots_handled = set()
 
+    # The reason_question_generator is a generator
+    for (slot, question) in reason_question_generator:
+        slots_handled.add(slot)
+        user_input = input('System: ' + question + "\nYou: ")
+        # @TODO: Do some slot extraction stuff bla bla bla
+        new_slots[slot] = user_input
+
+    for handled in slots_handled:
+        if handled in slots:
+            del slots[handled]
+    
+    generic_question_generator = generic_dialog_handler(new_slots, slots)
+    slots = slots | new_slots
+
+    for (slot, question) in generic_question_generator:
+        user_input = input('System: ' + question + "\nYou: ")
+        # @TODO: Do some slot extraction stuff bla bla bla
+        slots[slot] = user_input
+
+    return slots
+    
 
 if __name__ == '__main__':
-    confl = find_conflicting(ROMANTIC, ASSIGNED_SEATS)
+    from src.dialog_manager import Slot
 
+    slots = {
+        Crowdedness: Slot('', value=Crowdedness.BUSY),
+        Length_Of_Stay: Slot('', value=Length_Of_Stay.SHORT),     
+        Romantic: Slot('', value=Romantic.YES),
+        Assigned_Seats: Slot('', value=Assigned_Seats.YES),
+    }
 
-    check_for_conflicting_reasonings((ROMANTIC, ASSIGNED_SEATS, CHILDREN))
-
-    #for conflicting_class, conflicting_values in confl.items():
-    #    cq = ask_to_resolve_conflicting(conflicting_class,
-    #                               conflicting_values,
-    #                               romantic=True,
-    #                               assigned_seats=True)
-    #    print(cq)
-    #print(confl)
+    r = reasoning(slots)
+    print(r)
