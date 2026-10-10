@@ -9,7 +9,7 @@ from src.enums.dialog_states import DialogState
 import src.enums.restaurant_props as rpe
 from src import PROGRAM, DESCRIPTION, MODEL_NAMES
 from src.utils import tts
-import src.utils.parser as upar
+import src.utils.parser as parser
 from dataclasses import dataclass
 
 ALLOWED_MODELS = list(MODEL_NAMES.keys())
@@ -19,7 +19,7 @@ intro_agg: str = INTO_SENTENCE + INTRO_PROMPT
 
 #TEMP TODO: load this in on first instance
 file_path: str = 'data/restaurant_info_extended.csv'
-rest_data = upar.load_restaurant_data(file_path)
+rest_data = parser.load_restaurant_data(file_path)
 
 
 @dataclass
@@ -51,6 +51,7 @@ def dialog_arg_parser() -> Dict[str, Any]:
     parser.add_argument('-m', '--model',
                         type=str, required=True, help='Model types', choices=ALLOWED_MODELS)
     parser.add_argument('--tts', action='store_true',)
+    parser.add_argument('--simllm', action='store_true')
 
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
@@ -130,7 +131,7 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
 def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
     #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
     pref_ = {k.__name__.lower(): v for k, v in preferences.items()}
-    rests = upar.fetch_resturant_by_info(rest_data, **pref_)
+    rests = parser.fetch_resturant_by_info(rest_data, **pref_)
     return [r.title() for r in rests['restaurantname'].to_list()]
 
 def get_restaurant_details() -> str:
@@ -209,6 +210,8 @@ if __name__ == '__main__':
     kwargs = dialog_arg_parser()
     if kwargs['tts']:
         tts.load_pipeline()
+    if kwargs['simllm']:
+        print = parser.enable_gpt_like_typing()
 
     model_name = kwargs['model']
     input_path = f'model_files/{model_name}.joblib'
