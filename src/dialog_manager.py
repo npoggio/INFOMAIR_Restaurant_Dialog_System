@@ -8,10 +8,14 @@ from src.enums.models import Models
 from src.enums.dialog_states import DialogState
 import src.enums.restaurant_props as rpe
 from src import PROGRAM, DESCRIPTION, MODEL_NAMES
+from src.utils import tts
 import src.utils.parser as upar
 from dataclasses import dataclass
 
 ALLOWED_MODELS = list(MODEL_NAMES.keys())
+INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
+INTRO_PROMPT: str = "\nType QUIT to exit"  # Will never be read by TTS
+intro_agg: str = INTO_SENTENCE + INTRO_PROMPT
 
 #TEMP TODO: load this in on first instance
 file_path: str = 'data/restaurant_info_extended.csv'
@@ -46,6 +50,7 @@ def dialog_arg_parser() -> Dict[str, Any]:
     # Model
     parser.add_argument('-m', '--model',
                         type=str, required=True, help='Model types', choices=ALLOWED_MODELS)
+    parser.add_argument('--tts', action='store_true',)
 
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
@@ -58,7 +63,7 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         if dialog_act == DialogAct.INFORM or extract_preferences(utterance):
             return handle_inform(utterance)
         if dialog_act == DialogAct.HELLO:
-            return DialogState.INTRODUCTION, get_intro_sentence()
+            return DialogState.INTRODUCTION, INTO_SENTENCE
         if dialog_act == DialogAct.BYE:
             return DialogState.END, "Goodbye!"
         return DialogState.INTRODUCTION, get_repromt_for_missing_slots()
@@ -77,7 +82,7 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         if dialog_act == DialogAct.REQUEST:
             return DialogState.INFORM, get_restaurant_details()
         if dialog_act == DialogAct.RESTART:
-            return DialogState.INTRODUCTION, get_intro_sentence()
+            return DialogState.INTRODUCTION, intro_agg
     
 
     # This is basically hit anytime once the user has confirmed or thank you. TODO: probably bugs with this. needs testing    
@@ -126,7 +131,6 @@ def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
     #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
     pref_ = {k.__name__.lower(): v for k, v in preferences.items()}
     rests = upar.fetch_resturant_by_info(rest_data, **pref_)
-    print(rests)
     return [r.title() for r in rests['restaurantname'].to_list()]
 
 def get_restaurant_details() -> str:
@@ -138,9 +142,6 @@ def next_missing_slot() -> Slot:
         if not slot.filled:
             return slot
     return None
-
-def get_intro_sentence() -> str:
-    return "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?\nType QUIT to exit"
 
 def get_repromt_for_missing_slots() -> str:
     missing_slot = next_missing_slot()
@@ -178,7 +179,7 @@ def describe_restaurant(preferences: Dict[rpe.StrEnum, str]) -> str:
 #    InfoRequestType.FOOD_TYPE:   ["italian", "chinese", "indian", "thai", "french", "british", "spanish", "japanese", "korean", "mexican"],
 #}
 
-TEMP_KEYWORDS: Tuple = [rpe.Area, rpe.PriceRange, rpe.Food]
+TEMP_KEYWORDS: Tuple = (rpe.Area, rpe.PriceRange, rpe.Food)
 
 
 def extract_preferences(utterance: str) -> Dict[rpe.StrEnum, str]:
@@ -194,19 +195,29 @@ def extract_preferences(utterance: str) -> Dict[rpe.StrEnum, str]:
     return preferences
 
 
-def classify(model: Models, input_path: str, utterance: str) -> str:
+def classify(model: Models, input_path: str, utterance: str) -> DialogAct:
     return DialogAct(run_str(model=model, input_path=input_path, phrases=[utterance])[0])
+
+
+def output_to_user(system_utterance, do_tts):
+    print(f'System: {system_utterance}')
+    if do_tts:
+        tts.gen_and_play_tts(system_utterance)
 
 
 if __name__ == '__main__':
     kwargs = dialog_arg_parser()
+    if kwargs['tts']:
+        tts.load_pipeline()
 
     model_name = kwargs['model']
     input_path = f'model_files/{model_name}.joblib'
 
     model = MODEL_NAMES[model_name]
 
-    print(get_intro_sentence())
+    output_to_user(INTO_SENTENCE, kwargs['tts'])
+    output_to_user(INTRO_PROMPT, do_tts=False)
+
     state = DialogState.INTRODUCTION
 
     while True:
@@ -215,9 +226,10 @@ if __name__ == '__main__':
         if user_input == 'QUIT':
             break
 
-        dialog_act = classify(model, input_path, user_input)
+        dialog_act: DialogAct = classify(model, input_path, user_input)
         state, system_utterance = state_transition(state, dialog_act, user_input)
-        print(f'System: {system_utterance}')
+        
+        output_to_user(system_utterance, kwargs['tts'])
 
         if state == DialogState.END:
             break
