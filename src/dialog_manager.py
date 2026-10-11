@@ -35,7 +35,7 @@ slots: Dict[rpe.StrEnum, Slot] = {
 pending_confirmations: Dict[rpe.StrEnum, str] = {}
 
 # Restaurants matching the current preferences, and which one we are currently suggesting.
-possible_restaurants: List[str] = []
+possible_restaurants: List[Dict[str, Any]] = []
 restaurant_index: int = 0
 
 def dialog_arg_parser() -> Dict[str, Any]:
@@ -60,6 +60,7 @@ def dialog_arg_parser() -> Dict[str, Any]:
 def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) -> Tuple[DialogState, str]:
     # Extract slots before trusting the dialog act: misspelled preferences ("wast", "chep") are usually
     # classified as null, but the fuzzy matching can still recover them.
+    print(state)
     new_preferences: Dict[rpe.StrEnum, str] = {}
     fuzzy_matched: Dict[rpe.StrEnum, str] = {}
     if state in (DialogState.INTRODUCTION, DialogState.ASK_PREFERENCES):
@@ -99,20 +100,21 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         if dialog_act == DialogAct.DENY or dialog_act == DialogAct.NEGATE:
             return DialogState.INFORM, offer_restaurant_suggestion(next_restaurant=True)
         if dialog_act == DialogAct.REQUEST:
-            # TODO: get better keywords instead of just phone and address
-            detail_type: RestaurantInfoType = None
-            if "phone" in utterance.lower() or "number" in utterance.lower():
-                detail_type = RestaurantInfoType.PHONE_NUMBER
-            elif "address" in utterance.lower() or "location" in utterance.lower():
-                detail_type = RestaurantInfoType.ADDRESS
-
-            return DialogState.INFORM, get_restaurant_details(detail_type=detail_type)
+            return DialogState.INFORM, get_restaurant_details(detail_type=get_requested_detail_type(utterance))
         if dialog_act == DialogAct.RESTART:
             return DialogState.INTRODUCTION, intro_agg
-    
 
-    # This is basically hit anytime once the user has confirmed or thank you. TODO: probably bugs with this. needs testing    
+
+    # This is basically hit anytime once the user has confirmed or thank you. TODO: probably bugs with this. needs testing
     return DialogState.END, "We'll pick a restaurant for you! Coming soon in theaters :)"
+
+def get_requested_detail_type(utterance: str) -> RestaurantInfoType:
+    # TODO: get better keywords instead of just phone and address
+    if "phone" in utterance.lower() or "number" in utterance.lower():
+        return RestaurantInfoType.PHONE_NUMBER
+    if "address" in utterance.lower() or "location" in utterance.lower():
+        return RestaurantInfoType.ADDRESS
+    return None
 
 def handle_inform(new_preferences: Dict[rpe.StrEnum, str], fuzzy_matched: Dict[rpe.StrEnum, str] = None) -> Tuple[DialogState, str]:
     """Stores every keyword-matched preference, overwriting any value that was already stored.
@@ -185,22 +187,38 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
 
     if restaurant_index >= len(possible_restaurants):
         return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + "."
-    return possible_restaurants[restaurant_index] + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
+    return possible_restaurants[restaurant_index]['restaurantname'].title() + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
 
-def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
-    #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
+def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[Dict[str, Any]]:
+    """Returns every matching restaurant as a dict of its csv columns (restaurantname, phone, addr, ...)."""
     pref_ = {k.__name__.lower(): v for k, v in preferences.items()}
     rests = parser.fetch_resturant_by_info(rest_data, **pref_)
-    return [r.title() for r in rests['restaurantname'].to_list()]
+
+    rests = rests.astype(object).where(rests.notna(), None)
+    return rests.to_dict('records')
 
 def get_restaurant_details(detail_type: RestaurantInfoType = None) -> str:
-    #details = possible_restaurants[restaurant_index].details TODO: wait for Jesse to implement this
-    if detail_type == RestaurantInfoType.PHONE_NUMBER:
-        return "Phone number is 123-456-7890."
-    elif detail_type == RestaurantInfoType.ADDRESS:
-        return "Address is 123 Main St."
+    if restaurant_index >= len(possible_restaurants):
+        return "Sorry, I don't have a restaurant suggestion for you yet."
+    restaurant = possible_restaurants[restaurant_index]
+    name = restaurant['restaurantname'].title()
+
+    phone = restaurant.get('phone')
+    phone_sentence = f"The phone number of {name} is {phone}." if phone else f"Sorry, I don't know the phone number of {name}."
+
+    address = restaurant.get('addr')
+    if address:
+        postcode = restaurant.get('postcode')
+        address_sentence = f"The address of {name} is {address.title()}" + (f", {postcode.upper()}." if postcode else ".")
     else:
-        return "Phone number is 123-456-7890. Address is 123 Main St."
+        address_sentence = f"Sorry, I don't know the address of {name}."
+
+    if detail_type == RestaurantInfoType.PHONE_NUMBER:
+        return phone_sentence
+    elif detail_type == RestaurantInfoType.ADDRESS:
+        return address_sentence
+    else:
+        return phone_sentence + " " + address_sentence
 
 def next_missing_slot() -> Slot:
     slot_type = next_missing_slot_type()
@@ -307,6 +325,7 @@ if __name__ == '__main__':
             break
 
         dialog_act: DialogAct = classify(model, input_path, user_input)
+        print(f"dialog act: {dialog_act.name}")
         state, system_utterance = state_transition(state, dialog_act, user_input)
         
         output_to_user(system_utterance, kwargs['tts'])
