@@ -15,6 +15,8 @@ from src import PROGRAM, DESCRIPTION, MODEL_NAMES, MODEL_NAMES_DIALOG
 from src.utils import tts
 import src.utils.parser as parser
 from src.data_classes.slot import Slot, DONT_CARE
+from src.enums.restart import Restart
+    
 
 ALLOWED_MODELS = list(MODEL_NAMES_DIALOG.keys())
 INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
@@ -64,6 +66,21 @@ def dialog_arg_parser() -> Dict[str, Any]:
 
 
 def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) -> Tuple[DialogState, str]:
+    global restaurant_index
+
+    # Handle restarting before processing any state or preferences.
+    if (dialog_act == DialogAct.RESTART or any(phrase.value in utterance.lower() for phrase in Restart)):
+        for slot_type, slot in slots.items():
+            slots[slot_type] = Slot(question=slot.question)
+
+        pending_confirmations.clear()
+        possible_restaurants.clear()
+        restaurant_index = 0
+
+        return DialogState.INTRODUCTION, (
+            "Let's start again. What kind of food, area "
+            "or price range would you like?"
+        )
     # Extract slots before trusting the dialog act: misspelled preferences ("wast", "chep") are usually
     # classified as null, but the fuzzy matching can still recover them.
 
@@ -101,12 +118,47 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
 
     if state == DialogState.CONFIRM_SLOT:
         return handle_slot_confirmation(dialog_act, utterance)
-
+    
     if state == DialogState.INFORM:
+        # Allow the user to change preferences during recommendations.
+        new_preferences, fuzzy_matched = extract_preferences(
+            utterance, fuzzy_slots=[]
+        )
+        if new_preferences:
+            return handle_inform(new_preferences, fuzzy_matched)
+        
+        # if all options are exhausted give the opportunity to start over
+        if restaurant_index >= len(possible_restaurants):
+            if dialog_act in (DialogAct.AFFIRM, DialogAct.CONFIRM):
+                return DialogState.END, "Thank you. Goodbye!"
+
+            if dialog_act in (
+                DialogAct.DENY,
+                DialogAct.NEGATE,
+                DialogAct.RESTART,
+            ):
+                for slot_type, slot in slots.items():
+                    slots[slot_type] = Slot(question=slot.question)
+
+                pending_confirmations.clear()
+                possible_restaurants.clear()
+
+                return DialogState.INTRODUCTION, (
+                    "Let's start again. What kind of food, area "
+                    "or price range would you like?"
+                )
+
+            return DialogState.INFORM, (
+                "Say yes if your request has been fulfilled, "
+                "or no to start again. You can also change your preferences."
+            )
+
         if dialog_act == DialogAct.CONFIRM or dialog_act == DialogAct.AFFIRM:
             return DialogState.CONFIRM, "Great! I'll reserve that for you."
+        
         if dialog_act == DialogAct.DENY or dialog_act == DialogAct.NEGATE:
             return DialogState.INFORM, offer_restaurant_suggestion(next_restaurant=True)
+        
         if dialog_act == DialogAct.REQUEST:
             # TODO: get better keywords instead of just phone and address
             detail_type: RestaurantInfoType = None
@@ -116,12 +168,13 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
                 detail_type = RestaurantInfoType.ADDRESS
 
             return DialogState.INFORM, get_restaurant_details(detail_type=detail_type)
+        
         if dialog_act == DialogAct.RESTART:
             return DialogState.INTRODUCTION, intro_agg
     
 
     # This is basically hit anytime once the user has confirmed or thank you. TODO: probably bugs with this. needs testing    
-    return DialogState.END, "We'll pick a restaurant for you! Coming soon in theaters :)"
+    return DialogState.END, "Thank you for using our restaurant recommendation system! Until next time :)"
 
 def handle_inform(new_preferences: Dict[rpe.StrEnum, str], fuzzy_matched: Dict[rpe.StrEnum, str] = None) -> Tuple[DialogState, str]:
     """Stores every keyword-matched preference, overwriting any value that was already stored.
@@ -193,7 +246,7 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
         restaurant_index = 0
 
     if restaurant_index >= len(possible_restaurants):
-        return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + "."
+        return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + ". Would you like to search for other options? "+ "Say yes to finish, or no to start again."
     return possible_restaurants[restaurant_index] + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
 
 def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
@@ -272,26 +325,43 @@ def extract_preferences(utterance: str, fuzzy_slots: List[rpe.StrEnum] = None) -
     #print(utterance, fuzzy_slots, fuzzy_preferences, missing_slots, sep=' | ')
 
     if not missing_slots or match_type is None:
+
         return preferences, fuzzy_preferences
 
-    if match_type == MatchType.LEVENSHTEIN:
+    if match_type in (None, MatchType.LEVENSHTEIN):
         words = utterance.lower().split()
         for slot_type in missing_slots:
             for word in words:
                 # Short words like "the" or "eat" are too close to real keywords to fuzzy match safely.
                 if len(word) < LEVENSHTEIN_MIN_WORD_LENGTH:
                     continue
+
                 match = get_word_with_levenshtein_distance(word, list(slot_type), LEVENSHTEIN_MAX_DISTANCE)
                 if match is not None:
                     fuzzy_preferences[slot_type] = match
                     break
-    elif match_type == MatchType.SEMANTIC_EMBEDDINGS:
+    
+    if fuzzy_preferences:
+        return preferences, fuzzy_preferences
+    
+    # Semantic matching handles slots not recovered by Levenshtein.
+    remaining_slots = [slot_type for slot_type in missing_slots if slot_type not in fuzzy_preferences]
+
+    if (remaining_slots and match_type in (None, MatchType.SEMANTIC_EMBEDDINGS)):
         semantic_slots = extract_slots_semantic(utterance)
-        for slot_type in missing_slots:
+
+        for slot_type in remaining_slots:
             if slot_type in semantic_slots:
                 fuzzy_preferences[slot_type] = semantic_slots[slot_type]
 
     return preferences, fuzzy_preferences
+    # elif match_type == MatchType.SEMANTIC_EMBEDDINGS:
+    #     semantic_slots = extract_slots_semantic(utterance)
+    #     for slot_type in missing_slots:
+    #         if slot_type in semantic_slots:
+    #             fuzzy_preferences[slot_type] = semantic_slots[slot_type]
+
+
 
 
 def classify(model: Models, input_path: str, utterance: str) -> DialogAct:
