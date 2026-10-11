@@ -93,8 +93,8 @@ class Assigned_Seats(StrEnum):
 class Children(StrEnum):
     #YES_ = 'yes_'
     #NO_ = 'no_'
-    YES = 'for children'
-    NO = 'for adults'
+    YES = 'children'
+    NO = 'adults'
 
 class Romantic(StrEnum):
     #YES_ = 'yes_'
