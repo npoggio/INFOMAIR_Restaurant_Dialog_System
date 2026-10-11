@@ -2,14 +2,14 @@ import re
 import csv
 import Levenshtein
 
-from src.enums.restaurant_props import PriceRange, Area, Food
+from src.enums.restaurant_props import PriceRange, Area, Food, Romantic, Children, Touristic, Assigned_Seats
 from src.enums.dont_care import DontCare
 from src.models.rule_based_baseline import contains_keyword
 from sklearn.metrics.pairwise import cosine_similarity
 from src.utils.distilbert_embeddings import get_distilbert_embeddings
 
 DATA_PATH = "data/restaurant_info_extended.csv"
-
+EXTRACTABLE_SLOTS = [Food, PriceRange, Area, Romantic, Children, Touristic, Assigned_Seats]
 
 # Used to collect all the different food types from restaurant_info.csv
 def get_food_types():
@@ -41,19 +41,19 @@ def extract_slots_keyword(utterance):
     # Food slot
     for food in Food:
         if contains_keyword(text, food.value):
-            slots[Food] = food.value
+            slots[Food] = food
             break
 
     # Price slot
     for price in PriceRange:
         if contains_keyword(text, price.value):
-            slots[PriceRange] = price.value
+            slots[PriceRange] = price
             break
 
     # Area slot
     for area in Area:
         if contains_keyword(text, area.value):
-            slots[Area] = area.value
+            slots[Area] = area
             break
 
     return slots
@@ -62,7 +62,8 @@ def extract_slots_keyword(utterance):
 # 2. Levenshtein distance
 def get_word_with_levenshtein_distance(mismatched_keyword, possible_values=None, max_distance=None):
     if possible_values is None:
-        possible_values = list(PriceRange) + list(Area) + list(Food)
+        possible_values = []
+        [possible_values.extend(slot) for slot in EXTRACTABLE_SLOTS]
 
     closest_match = None
     lowest_distance = float("inf")
@@ -87,7 +88,7 @@ def get_word_with_levenshtein_distance(mismatched_keyword, possible_values=None,
     if is_tie:
         return None
 
-    return closest_match.value
+    return closest_match
 
 
 # 3. Semantic similarity via DistilBERT embeddings
@@ -120,12 +121,11 @@ def find_semantic_match(text, possible_values, threshold=0.7):
     best_value = possible_values[best_index]
 
     if best_similarity >= threshold:
-        return best_value.value, best_similarity
+        return best_value, best_similarity
 
     return None, 0
 
 
-EXTRACTABLE_SLOTS = [Food, PriceRange, Area]
 
 
 def phrase_to_ngram(phrase, max_ngram=3):

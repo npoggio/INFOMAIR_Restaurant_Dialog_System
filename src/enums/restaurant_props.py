@@ -77,23 +77,30 @@ class Length_Of_Stay(StrEnum):
 
 
 class Touristic(StrEnum):
-    YES = 'yes'
-    NO = 'no'
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'touristic'
+    NO = 'local'
 
 
 class Assigned_Seats(StrEnum):
-    YES = 'yes'
-    NO = 'no'
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'assigned'
+    NO = 'free'
 
 
 class Children(StrEnum):
-    YES = 'yes'
-    NO = 'no'
-
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'child friendly'
+    NO = 'for adults'
 
 class Romantic(StrEnum):
-    YES = 'yes'
-    NO = 'no'
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'romantic'
+    NO = 'practical'
 
 class RestaurantInfoType(StrEnum):
     PHONE_NUMBER = 'phone number'

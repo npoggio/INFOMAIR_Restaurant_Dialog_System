@@ -3,6 +3,7 @@ import argparse
 import sys
 import threading
 from src.dialog.slot_extraction import extract_slots_keyword, extract_slots_semantic, get_word_with_levenshtein_distance, is_dont_care
+from src.dialog import reasoning
 from src.enums.dialog_act import DialogAct
 from src.enums.match_type import MatchType
 from src.enums.restaurant_props import RestaurantInfoType
@@ -28,9 +29,13 @@ file_path: str = 'data/restaurant_info_extended.csv'
 rest_data = parser.load_restaurant_data(file_path)
 
 slots: Dict[rpe.StrEnum, Slot] = {
-    rpe.Food:        Slot(question="What kind of food would you like?"),
-    rpe.Area:        Slot(question="What part of town do you have in mind?"),
-    rpe.PriceRange:  Slot(question="Would you like something cheap, moderate or expensive?"),
+    rpe.Food:           Slot(question="What kind of food would you like?"),
+    rpe.Area:           Slot(question="What part of town do you have in mind?"),
+    rpe.PriceRange:     Slot(question="Would you like something cheap, moderate or expensive?"),
+    rpe.Touristic:      Slot(question="Would you like a touristic or a local place?"),
+    rpe.Children:       Slot(question="Do you want a restaurant for children, or more for adults?"),
+    rpe.Assigned_Seats: Slot(question="Do you want a restaurant with assigned or free seats"),
+    rpe.Romantic:       Slot(question="Would you like a more romantic or practical spot?")
 }
 pending_confirmations: Dict[rpe.StrEnum, str] = {}
 
@@ -60,6 +65,7 @@ def dialog_arg_parser() -> Dict[str, Any]:
 def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) -> Tuple[DialogState, str]:
     # Extract slots before trusting the dialog act: misspelled preferences ("wast", "chep") are usually
     # classified as null, but the fuzzy matching can still recover them.
+
     new_preferences: Dict[rpe.StrEnum, str] = {}
     fuzzy_matched: Dict[rpe.StrEnum, str] = {}
     if state in (DialogState.INTRODUCTION, DialogState.ASK_PREFERENCES):
@@ -67,12 +73,14 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         if state == DialogState.ASK_PREFERENCES:
             missing_slot_type = next_missing_slot_type()
             fuzzy_slots = [missing_slot_type] if missing_slot_type else None
+
         new_preferences, fuzzy_matched = extract_preferences(utterance, fuzzy_slots=fuzzy_slots)
 
         # "Dont care" case was given, put a wildcard value
         if state == DialogState.ASK_PREFERENCES and missing_slot_type and not new_preferences and is_dont_care(utterance):
             new_preferences = {missing_slot_type: DONT_CARE}
             fuzzy_matched = {}
+
 
     # Repeatedly introduce and ask for user input until ther user provides us with more information.
     if state == DialogState.INTRODUCTION:
@@ -189,7 +197,11 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
 
 def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
     #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
-    pref_ = {k.__name__.lower(): v for k, v in preferences.items()}
+    print(preferences)
+    preferences_ = reasoning.reasoning(preferences)
+
+    pref_ = {k.__name__.lower(): v for k, v in preferences_.items()}
+    print(pref_)
     rests = parser.fetch_resturant_by_info(rest_data, **pref_)
     return [r.title() for r in rests['restaurantname'].to_list()]
 
@@ -248,6 +260,8 @@ def extract_preferences(utterance: str, fuzzy_slots: List[rpe.StrEnum] = None) -
     fuzzy_preferences: Dict[rpe.StrEnum, str] = {}
     candidate_slots = fuzzy_slots if fuzzy_slots is not None else list(slots)
     missing_slots = [slot_type for slot_type in candidate_slots if slot_type not in preferences]
+
+    #print(utterance, fuzzy_slots, fuzzy_preferences, missing_slots, sep=' | ')
 
     if not missing_slots or match_type is None:
         return preferences, fuzzy_preferences
