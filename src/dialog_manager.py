@@ -20,7 +20,7 @@ from src.enums.restart import Restart
 
 ALLOWED_MODELS = list(MODEL_NAMES_DIALOG.keys())
 INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
-INTRO_PROMPT: str = "\nType QUIT to exit"  # Will never be read by TTS
+INTRO_PROMPT: str = "Type QUIT to exit"  # Will never be read by TTS
 intro_agg: str = INTO_SENTENCE + INTRO_PROMPT
 
 LEVENSHTEIN_MAX_DISTANCE: int = 2
@@ -129,14 +129,14 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         
         # if all options are exhausted give the opportunity to start over
         if restaurant_index >= len(possible_restaurants):
-            if dialog_act in (DialogAct.AFFIRM, DialogAct.CONFIRM):
-                return DialogState.END, "Thank you. Goodbye!"
-
             if dialog_act in (
                 DialogAct.DENY,
                 DialogAct.NEGATE,
                 DialogAct.RESTART,
             ):
+                return DialogState.END, "Thank you. Goodbye!"
+
+            if dialog_act in (DialogAct.AFFIRM, DialogAct.CONFIRM):
                 for slot_type, slot in slots.items():
                     slots[slot_type] = Slot(question=slot.question)
 
@@ -149,8 +149,8 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
                 )
 
             return DialogState.INFORM, (
-                "Say yes if your request has been fulfilled, "
-                "or no to start again. You can also change your preferences."
+                "Say no if your request has been fulfilled, "
+                "or yes to start again. You can also change your preferences."
             )
 
         if dialog_act == DialogAct.CONFIRM or dialog_act == DialogAct.AFFIRM:
@@ -254,21 +254,20 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
         restaurant_index = 0
 
     if restaurant_index >= len(possible_restaurants):
-        return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + ". Would you like to search for other options? "+ "Say yes to finish, or no to start again."
+        return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + ". Would you like to search for other options? "+ "Say no to finish, or yes to start again."
     return possible_restaurants[restaurant_index] + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
 
 def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
     #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
-    print(preferences)
     preferences_ = reasoning.reasoning(preferences).copy()
     pref_keys = list(preferences_.keys())
 
     for pref in pref_keys:
-        print(pref, issubclass(pref, reasoning.REASONING_SLOTS))
+        #print(pref, issubclass(pref, reasoning.REASONING_SLOTS))
         if issubclass(pref, reasoning.REASONING_SLOTS):
             del preferences_[pref]
 
-    print(preferences_)
+    #print(preferences_)
 
     pref_ = {k.__name__.lower(): v for k, v in preferences_.items()}
     rests = parser.fetch_resturant_by_info(rest_data, **pref_)
@@ -394,14 +393,14 @@ def classify(model: Models, input_path: str, utterance: str) -> DialogAct:
 
 def output_to_user(system_utterance, do_tts):
     # For the GPT sim, it takes too long with TTS if they are not parallel. 
-    threading.Thread(
-        target=print,
-        args=(f'System: {system_utterance}',),
-        daemon=True,
-    ).start()
-
     if do_tts:
-        tts.gen_and_play_tts(system_utterance)
+        threading.Thread(
+            target=tts.gen_and_play_tts,
+            args=(system_utterance,),
+            daemon=True,
+        ).start()
+
+    print(f'System: {system_utterance}')
 
 
 if __name__ == '__main__':
@@ -423,7 +422,8 @@ if __name__ == '__main__':
     state = DialogState.INTRODUCTION
 
     while True:
-        user_input = input("You: ")
+        print("You:", end='') # To fix the llmsim 
+        user_input = input("")
 
         if user_input == 'QUIT':
             break
