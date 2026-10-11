@@ -1,6 +1,7 @@
 from typing import Dict, List, Iterable, Optional, Tuple
 from enum import StrEnum
 from itertools import combinations
+from src import qra
 from src.enums.restaurant_props import (
     Area, PriceRange, Food, Romantic, Not_Food,
     Touristic, Assigned_Seats, Children,
@@ -70,6 +71,7 @@ __CONFLICTING_Q0 = "You mentioned you'd like a {confl_prefl} {confl_class} resta
 _CONFLICTING_QR = "You mentioned you'd like {logic_prefl} and {logic_prefr} restaurant. However, this clashes in the form of {confl_class}. Would you like {prefl} or {prefr}"
 
 reasoning_slots_filter = lambda enum, slot: (issubclass(enum, REASONING_SLOTS)) and (str(slot.value) in (getattr(slot, 'YES'), getattr(slot, 'YES')))
+slot_extr = lambda e, _: qra(list(e))
 
 def ask_to_resolve_conflicting(conflicting_class, 
                                conflicticn_values,
@@ -207,7 +209,9 @@ def reasoning(slots) -> Dict[StrEnum, str]:
     # The reason_question_generator is a generator
     for (slot, question) in reason_question_generator:
         slots_handled.add(slot)
-        user_input = input('System: ' + question + "\nYou: ")
+        print('System: ' + question + "\nYou: ", end='')
+        user_input = input() 
+
         # @TODO: Do some slot extraction stuff bla bla bla
         new_slots[slot] = user_input
 
@@ -219,9 +223,11 @@ def reasoning(slots) -> Dict[StrEnum, str]:
     slots = slots | new_slots
 
     for (slot, question) in generic_question_generator:
-        user_input = input('System: ' + question + "\nYou: ")
+        print('System: ' + question + "\nYou:", end=' ')
+        user_input = input()
         # @TODO: Do some slot extraction stuff bla bla bla
-        slots[slot] = user_input
+        #slots[slot] = user_input
+        slots[slot] = slot_extr(slot, user_input)
 
     return slots
     
@@ -230,10 +236,10 @@ if __name__ == '__main__':
     from src.dialog_manager import Slot
 
     slots = {
-        Crowdedness: Slot('', value=Crowdedness.BUSY),
-        Length_Of_Stay: Slot('', value=Length_Of_Stay.SHORT),     
-        Romantic: Slot('', value=Romantic.YES),
-        Assigned_Seats: Slot('', value=Assigned_Seats.YES),
+        Crowdedness: Crowdedness.BUSY,
+        Length_Of_Stay: Length_Of_Stay.SHORT,     
+        Romantic: Romantic.YES,
+        Assigned_Seats: Assigned_Seats.YES,
     }
 
     r = reasoning(slots)

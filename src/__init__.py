@@ -4,10 +4,12 @@ from .models import logistic_regression_model as lr
 from .models import rule_based_baseline as rb
 from .utils.document_term import get_embeddings
 from .utils.distilbert_embeddings import get_distilbert_embeddings
+import random
 
 PROGRAM = 'Restaurant Dialog System'
 DESCRIPTION = '''A dialog system for choosing a restaurant.
 Created by W. Boersma, J.O. Ceulemans, M.A.I. Lalta & N.D. Poggio.'''
+qra = random.choice
 
 MODEL_NAMES = {
     'rb': Models.RULE_BASED,

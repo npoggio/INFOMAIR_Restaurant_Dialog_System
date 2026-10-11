@@ -405,7 +405,7 @@ if __name__ == '__main__':
     state = DialogState.INTRODUCTION
 
     while True:
-        print("You:", end='') # To fix the llmsim 
+        print("You:", end=' ') # To fix the llmsim 
         user_input = input("")
 
         if user_input == 'QUIT':
