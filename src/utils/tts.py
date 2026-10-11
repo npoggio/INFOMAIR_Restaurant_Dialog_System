@@ -10,7 +10,7 @@ VOICE: str = "am_echo"
 # US-male   (am): am_adam,  am_michael, am_fenrir, am_echo,  am_onyx, am_puck
 
 MODEL_CACHE_PATH: str = 'model_files/tts_cache'
-TEMP_AUDIO_FILE: str = 'model_files/tts_cahce/temp_out.wav'
+TEMP_AUDIO_FILE: str = 'model_files/tts_cache/temp_out.wav'
 
 
 os.environ["HF_HOME"] = MODEL_CACHE_PATH

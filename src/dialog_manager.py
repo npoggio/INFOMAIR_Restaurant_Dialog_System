@@ -12,7 +12,7 @@ from src.enums.dialog_states import DialogState
 import src.enums.restaurant_props as rpe
 from src import PROGRAM, DESCRIPTION, MODEL_NAMES
 from src.utils import tts
-import src.utils.parser as upar
+import src.utils.parser as parser
 from src.data_classes.slot import Slot, DONT_CARE
 
 ALLOWED_MODELS = list(MODEL_NAMES.keys())
@@ -25,8 +25,7 @@ LEVENSHTEIN_MIN_WORD_LENGTH: int = 4
 
 #TEMP TODO: load this in on first instance
 file_path: str = 'data/restaurant_info_extended.csv'
-rest_data = upar.load_restaurant_data(file_path)
-match_type: MatchType = None
+rest_data = parser.load_restaurant_data(file_path)
 
 slots: Dict[rpe.StrEnum, Slot] = {
     rpe.Food:        Slot(question="What kind of food would you like?"),
@@ -49,6 +48,7 @@ def dialog_arg_parser() -> Dict[str, Any]:
     parser.add_argument('-m', '--model',
                         type=str, required=True, help='Model types', choices=ALLOWED_MODELS)
     parser.add_argument('--tts', action='store_true',)
+    parser.add_argument('--simllm', action='store_true')
     parser.add_argument('--match_type', type=MatchType, choices=list(MatchType), default=None,
                         help='Fallback slot matching when keyword matching fails')
 
@@ -190,7 +190,7 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
 def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
     #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
     pref_ = {k.__name__.lower(): v for k, v in preferences.items()}
-    rests = upar.fetch_resturant_by_info(rest_data, **pref_)
+    rests = parser.fetch_resturant_by_info(rest_data, **pref_)
     return [r.title() for r in rests['restaurantname'].to_list()]
 
 def get_restaurant_details(detail_type: RestaurantInfoType = None) -> str:
@@ -286,6 +286,8 @@ if __name__ == '__main__':
     kwargs = dialog_arg_parser()
     if kwargs['tts']:
         tts.load_pipeline()
+    if kwargs['simllm']:
+        print = parser.enable_gpt_like_typing()
 
     model_name = kwargs['model']
     input_path = f'model_files/{model_name}.joblib'
