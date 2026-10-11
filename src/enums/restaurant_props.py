@@ -94,3 +94,7 @@ class Children(StrEnum):
 class Romantic(StrEnum):
     YES = 'yes'
     NO = 'no'
+
+class RestaurantInfoType(StrEnum):
+    PHONE_NUMBER = 'phone number'
+    ADDRESS = 'address'
