@@ -17,6 +17,19 @@ MODEL_NAMES = {
     'lr_bert': Models.LOGISTIC_REGRESSION_BERT,
 }
 
+MODEL_NAMES_DIALOG = {
+    'rb': Models.RULE_BASED,
+    'svm_bow': Models.SUPPORT_VECTOR_MACHINE_BOW,
+    'lr_bow': Models.LOGISTIC_REGRESSION_BOW,
+    'svm_bert': Models.SUPPORT_VECTOR_MACHINE_BERT,
+    'lr_bert': Models.LOGISTIC_REGRESSION_BERT,
+    'rb_g': Models.RULE_BASED,
+    'svm_bow_g': Models.SUPPORT_VECTOR_MACHINE_BOW,
+    'lr_bow_g': Models.LOGISTIC_REGRESSION_BOW,
+    'svm_bert_g': Models.SUPPORT_VECTOR_MACHINE_BERT,
+    'lr_bert_g': Models.LOGISTIC_REGRESSION_BERT,
+}
+
 MODELS_TRAINING = {
     Models.RULE_BASED: 
         None,

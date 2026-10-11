@@ -69,7 +69,7 @@ __CONFLICTING_Q0 = "You mentioned you'd like a {confl_prefl} {confl_class} resta
 "another indicated preference of {confl_prefr}. Would you like a {confl_prefl} or {confl_prefr} restaurant?"
 _CONFLICTING_QR = "You mentioned you'd like {logic_prefl} and {logic_prefr} restaurant. However, this clashes in the form of {confl_class}. Would you like {prefl} or {prefr}"
 
-reasoning_slots_filter = lambda enum, slot: (issubclass(enum, REASONING_SLOTS)) and (str(slot.value) == 'yes')
+reasoning_slots_filter = lambda enum, slot: (issubclass(enum, REASONING_SLOTS)) and (str(slot.value) in (getattr(slot, 'YES'), getattr(slot, 'YES')))
 
 def ask_to_resolve_conflicting(conflicting_class, 
                                conflicticn_values,
@@ -187,6 +187,7 @@ def generic_dialog_handler(preferences_a, preferences_b):
 
 def reasoning_dialog_handler(slots: Dict[StrEnum, 'Slot'], reasoning_slots_out):
     # Get all reasoning slots, explode them and check for conflicts
+    #print([(enum, slot) for enum, slot in slots.items() ])
     reasoning_slots = {enum: slot for enum, slot in slots.items() if reasoning_slots_filter(enum, slot)}
     exploded_reasoning_slots = [REASONING_EXPLOSION[slot] for slot in reasoning_slots]
     [reasoning_slots_out.update(reasoning_slot_exploded) for reasoning_slot_exploded in exploded_reasoning_slots]
