@@ -1,8 +1,10 @@
 from typing import Dict, Any, List, Tuple
 import argparse
 import sys
+from src.dialog.slot_extraction import extract_slots_keyword, extract_slots_semantic, get_word_with_levenshtein_distance, is_dont_care
 from src.enums.dialog_act import DialogAct
 #from src.enums.info_request_type import InfoRequestType
+from src.enums.match_type import MatchType
 from src.enums.restaurant_props import RestaurantInfoType
 from src.run import run_str
 from src.enums.models import Models
@@ -11,32 +13,27 @@ import src.enums.restaurant_props as rpe
 from src import PROGRAM, DESCRIPTION, MODEL_NAMES
 from src.utils import tts
 import src.utils.parser as upar
-from dataclasses import dataclass
+from src.data_classes.slot import Slot, DONT_CARE
 
 ALLOWED_MODELS = list(MODEL_NAMES.keys())
 INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
 INTRO_PROMPT: str = "\nType QUIT to exit"  # Will never be read by TTS
 intro_agg: str = INTO_SENTENCE + INTRO_PROMPT
 
+LEVENSHTEIN_MAX_DISTANCE: int = 2
+LEVENSHTEIN_MIN_WORD_LENGTH: int = 4
+
 #TEMP TODO: load this in on first instance
 file_path: str = 'data/restaurant_info_extended.csv'
 rest_data = upar.load_restaurant_data(file_path)
-
-
-@dataclass
-class Slot:
-    question: str
-    value: str = ""
-
-    @property
-    def filled(self) -> bool:
-        return self.value != ""
+match_type: MatchType = None
 
 slots: Dict[rpe.StrEnum, Slot] = {
     rpe.Food:        Slot(question="What kind of food would you like?"),
     rpe.Area:        Slot(question="What part of town do you have in mind?"),
     rpe.PriceRange:  Slot(question="Would you like something cheap, moderate or expensive?"),
 }
+pending_confirmations: Dict[rpe.StrEnum, str] = {}
 
 # Restaurants matching the current preferences, and which one we are currently suggesting.
 possible_restaurants: List[str] = []
@@ -52,6 +49,8 @@ def dialog_arg_parser() -> Dict[str, Any]:
     parser.add_argument('-m', '--model',
                         type=str, required=True, help='Model types', choices=ALLOWED_MODELS)
     parser.add_argument('--tts', action='store_true',)
+    parser.add_argument('--match_type', type=MatchType, choices=list(MatchType), default=None,
+                        help='Fallback slot matching when keyword matching fails')
 
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
@@ -59,10 +58,26 @@ def dialog_arg_parser() -> Dict[str, Any]:
 
 
 def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) -> Tuple[DialogState, str]:
+    # Extract slots before trusting the dialog act: misspelled preferences ("wast", "chep") are usually
+    # classified as null, but the fuzzy matching can still recover them.
+    new_preferences: Dict[rpe.StrEnum, str] = {}
+    fuzzy_matched: Dict[rpe.StrEnum, str] = {}
+    if state in (DialogState.INTRODUCTION, DialogState.ASK_PREFERENCES):
+        fuzzy_slots = None
+        if state == DialogState.ASK_PREFERENCES:
+            missing_slot_type = next_missing_slot_type()
+            fuzzy_slots = [missing_slot_type] if missing_slot_type else None
+        new_preferences, fuzzy_matched = extract_preferences(utterance, fuzzy_slots=fuzzy_slots)
+
+        # "Dont care" case was given, put a wildcard value
+        if state == DialogState.ASK_PREFERENCES and missing_slot_type and not new_preferences and is_dont_care(utterance):
+            new_preferences = {missing_slot_type: DONT_CARE}
+            fuzzy_matched = {}
+
     # Repeatedly introduce and ask for user input until ther user provides us with more information.
     if state == DialogState.INTRODUCTION:
-        if dialog_act == DialogAct.INFORM or extract_preferences(utterance):
-            return handle_inform(utterance)
+        if dialog_act == DialogAct.INFORM or new_preferences or fuzzy_matched:
+            return handle_inform(new_preferences, fuzzy_matched)
         if dialog_act == DialogAct.HELLO:
             return DialogState.INTRODUCTION, INTO_SENTENCE
         if dialog_act == DialogAct.BYE:
@@ -70,13 +85,16 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
         return DialogState.INTRODUCTION, get_repromt_for_missing_slots()
 
     if state == DialogState.ASK_PREFERENCES:
-        if dialog_act == DialogAct.INFORM:
-            return handle_inform(utterance)
+        if dialog_act == DialogAct.INFORM or new_preferences or fuzzy_matched:
+            return handle_inform(new_preferences, fuzzy_matched)
         else:
             return DialogState.ASK_PREFERENCES, get_repromt_for_missing_slots()
 
+    if state == DialogState.CONFIRM_SLOT:
+        return handle_slot_confirmation(dialog_act, utterance)
+
     if state == DialogState.INFORM:
-        if dialog_act == DialogAct.CONFIRM or dialog_act == DialogAct.AFFIRM: # TODO: which one is correct? or both
+        if dialog_act == DialogAct.CONFIRM or dialog_act == DialogAct.AFFIRM:
             return DialogState.CONFIRM, "Great! I'll reserve that for you."
         if dialog_act == DialogAct.DENY or dialog_act == DialogAct.NEGATE:
             return DialogState.INFORM, offer_restaurant_suggestion(next_restaurant=True)
@@ -96,22 +114,56 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
     # This is basically hit anytime once the user has confirmed or thank you. TODO: probably bugs with this. needs testing    
     return DialogState.END, "We'll pick a restaurant for you! Coming soon in theaters :)"
 
-#TODO: how to deal with dont care responses? ex. what kind of food do you want? i dont care
-def handle_inform(utterance: str) -> Tuple[DialogState, str]:
-    """Stores every preference extracted from the utterance, overwriting any value that was already stored.
+def handle_inform(new_preferences: Dict[rpe.StrEnum, str], fuzzy_matched: Dict[rpe.StrEnum, str] = None) -> Tuple[DialogState, str]:
+    """Stores every keyword-matched preference, overwriting any value that was already stored.
+    Fuzzy-matched preferences are only stored after the user confirms them.
     Then asks for the next missing preference, or suggests a restaurant once all are known."""
-    new_preferences = extract_preferences(utterance)
+    fuzzy_matched = fuzzy_matched or {}
     for info_request_type, info_request_value in new_preferences.items():
         slots[info_request_type].value = info_request_value
 
-    if not new_preferences:
+    if not new_preferences and not fuzzy_matched:
         return DialogState.ASK_PREFERENCES, get_repromt_for_missing_slots()
 
-    # Ask for the first preference we don't know yet.
+    # If there are any fuzzy-matched preferences, ask the user to confirm them before storing them
+    pending_confirmations.update(fuzzy_matched)
+    if pending_confirmations:
+        return DialogState.CONFIRM_SLOT, confirmation_question()
+
+    return ask_next_preference_or_suggest()
+
+def handle_slot_confirmation(dialog_act: DialogAct, utterance: str) -> Tuple[DialogState, str]:
+    slot_type, value = next(iter(pending_confirmations.items()))
+
+    if dialog_act in (DialogAct.AFFIRM, DialogAct.CONFIRM, DialogAct.ACK):
+        slots[slot_type].value = value
+        del pending_confirmations[slot_type]
+    elif dialog_act in (DialogAct.NEGATE, DialogAct.DENY):
+        del pending_confirmations[slot_type]
+        correction, _ = extract_preferences(utterance, fuzzy_slots=[])
+        if slot_type in correction:
+            slots[slot_type].value = correction[slot_type]
+        elif not pending_confirmations:
+            return DialogState.ASK_PREFERENCES, "Sorry about that. " + slots[slot_type].question
+    else:
+        return DialogState.CONFIRM_SLOT, "Sorry, I didn't catch that. " + confirmation_question()
+
+    if pending_confirmations:
+        return DialogState.CONFIRM_SLOT, confirmation_question()
+    return ask_next_preference_or_suggest()
+
+def confirmation_question() -> str:
+    slot_type, value = next(iter(pending_confirmations.items()))
+    if slot_type == rpe.Food:
+        return f"Did you mean {value.title()} food?"
+    if slot_type == rpe.Area:
+        return f"Did you mean the {value} of town?"
+    return f"Did you mean something {value}?"
+
+def ask_next_preference_or_suggest() -> Tuple[DialogState, str]:
+    # Ask for the first preference we don't know yet
     missing_slot = next_missing_slot()
     if missing_slot:
-        # LATER: repeat the new preferences back to the user before asking the next question. Only do this if they swithc their mind?
-        # return DialogState.ASK_PREFERENCES, "You said you wanted " + describe_restaurant(new_preferences) + ". " + missing_slot.question
         return DialogState.ASK_PREFERENCES, missing_slot.question
 
     # All preferences are known, so suggest a restaurant and let the user confirm it.
@@ -122,7 +174,8 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
 
     preferences = {}
     for info_request_type, slot in slots.items():
-        preferences[info_request_type] = slot.value
+        if slot.value != DONT_CARE:
+            preferences[info_request_type] = slot.value
 
     if next_restaurant:
         restaurant_index += 1
@@ -150,9 +203,13 @@ def get_restaurant_details(detail_type: RestaurantInfoType = None) -> str:
         return "Phone number is 123-456-7890. Address is 123 Main St."
 
 def next_missing_slot() -> Slot:
-    for slot in slots.values():
+    slot_type = next_missing_slot_type()
+    return slots[slot_type] if slot_type else None
+
+def next_missing_slot_type() -> rpe.StrEnum:
+    for slot_type, slot in slots.items():
         if not slot.filled:
-            return slot
+            return slot_type
     return None
 
 def get_repromt_for_missing_slots() -> str:
@@ -184,27 +241,35 @@ def describe_restaurant(preferences: Dict[rpe.StrEnum, str]) -> str:
 
     return description
 
-# TEMPORARY: keyword lists for testing until the real slot extraction is implemented.
-#TEMP_KEYWORDS: Dict[InfoRequestType, List[str]] = {
-#    InfoRequestType.AREA:        ["north", "south", "east", "west", "centre"],
-#    InfoRequestType.PRICE_RANGE: ["cheap", "moderate", "expensive"],
-#    InfoRequestType.FOOD_TYPE:   ["italian", "chinese", "indian", "thai", "french", "british", "spanish", "japanese", "korean", "mexican"],
-#}
+def extract_preferences(utterance: str, fuzzy_slots: List[rpe.StrEnum] = None) -> Tuple[Dict[rpe.StrEnum, str], Dict[rpe.StrEnum, str]]:
+    """Keyword matches every slot, then falls back to fuzzy matching for the slots that are still missing.
+    Returns (keyword matches, fuzzy matches) so fuzzy matches can be confirmed with the user."""
+    preferences: Dict[rpe.StrEnum, str] = extract_slots_keyword(utterance)
+    fuzzy_preferences: Dict[rpe.StrEnum, str] = {}
+    candidate_slots = fuzzy_slots if fuzzy_slots is not None else list(slots)
+    missing_slots = [slot_type for slot_type in candidate_slots if slot_type not in preferences]
 
-TEMP_KEYWORDS: Tuple = (rpe.Area, rpe.PriceRange, rpe.Food)
+    if not missing_slots or match_type is None:
+        return preferences, fuzzy_preferences
 
+    if match_type == MatchType.LEVENSHTEIN:
+        words = utterance.lower().split()
+        for slot_type in missing_slots:
+            for word in words:
+                # Short words like "the" or "eat" are too close to real keywords to fuzzy match safely.
+                if len(word) < LEVENSHTEIN_MIN_WORD_LENGTH:
+                    continue
+                match = get_word_with_levenshtein_distance(word, list(slot_type), LEVENSHTEIN_MAX_DISTANCE)
+                if match is not None:
+                    fuzzy_preferences[slot_type] = match
+                    break
+    elif match_type == MatchType.SEMANTIC_EMBEDDINGS:
+        semantic_slots = extract_slots_semantic(utterance)
+        for slot_type in missing_slots:
+            if slot_type in semantic_slots:
+                fuzzy_preferences[slot_type] = semantic_slots[slot_type]
 
-def extract_preferences(utterance: str) -> Dict[rpe.StrEnum, str]:
-    # TEMPORARY: extract preferences from the utterance once madrie finishes slot extaction.
-    words = utterance.lower().split()
-    preferences = {}
-    #for info_request_type, keywords in TEMP_KEYWORDS.items():
-    #    for keyword in keywords:
-    for rest_enum in TEMP_KEYWORDS:
-        for keyword in rest_enum:
-            if keyword in words:
-                preferences[rest_enum] = keyword
-    return preferences
+    return preferences, fuzzy_preferences
 
 
 def classify(model: Models, input_path: str, utterance: str) -> DialogAct:
@@ -224,6 +289,7 @@ if __name__ == '__main__':
 
     model_name = kwargs['model']
     input_path = f'model_files/{model_name}.joblib'
+    match_type = kwargs['match_type']
 
     model = MODEL_NAMES[model_name]
 
@@ -239,7 +305,6 @@ if __name__ == '__main__':
             break
 
         dialog_act: DialogAct = classify(model, input_path, user_input)
-        print(dialog_act)
         state, system_utterance = state_transition(state, dialog_act, user_input)
         
         output_to_user(system_utterance, kwargs['tts'])
