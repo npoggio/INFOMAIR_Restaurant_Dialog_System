@@ -20,7 +20,7 @@ from src.enums.restart import Restart
 
 ALLOWED_MODELS = list(MODEL_NAMES_DIALOG.keys())
 INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
-INTRO_PROMPT: str = "\nType QUIT to exit"  # Will never be read by TTS
+INTRO_PROMPT: str = "Type QUIT to exit"  # Will never be read by TTS
 intro_agg: str = INTO_SENTENCE + INTRO_PROMPT
 
 LEVENSHTEIN_MAX_DISTANCE: int = 2
@@ -369,14 +369,14 @@ def classify(model: Models, input_path: str, utterance: str) -> DialogAct:
 
 def output_to_user(system_utterance, do_tts):
     # For the GPT sim, it takes too long with TTS if they are not parallel. 
-    threading.Thread(
-        target=print,
-        args=(f'System: {system_utterance}',),
-        daemon=True,
-    ).start()
-
     if do_tts:
-        tts.gen_and_play_tts(system_utterance)
+        threading.Thread(
+            target=tts.gen_and_play_tts,
+            args=(system_utterance,),
+            daemon=True,
+        ).start()
+
+    print(f'System: {system_utterance}')
 
 
 if __name__ == '__main__':
@@ -398,7 +398,8 @@ if __name__ == '__main__':
     state = DialogState.INTRODUCTION
 
     while True:
-        user_input = input("You: ")
+        print("You:", end='') # To fix the llmsim 
+        user_input = input("")
 
         if user_input == 'QUIT':
             break

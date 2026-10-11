@@ -123,5 +123,6 @@ python -m src.dialog_manager.py --model <MODEL> [--tts] [--simllm]
 | Argument |Description |
 |----------|-------------|
 | `--model` | The model to use for utterance classification. Can be one of `svm_bow`, `svm_bert`, `lr_bow`, `lr_bert`, or `rb` (with or without `_g` for a grouped split-trained model). The model also needs to be present as a .joblib file in the [`model_files/`](model_files) directory. |
+| `--match_type` | The type of matching to use for restaurant recommendations. Can be `levenshtein` or `semantic_embeddings`. We recommend using `levenshtein` for better results. |
 | `--tts` | Enable text-to-speech output (T/F flag) |
 | `--simllm` | Simulates GPT-like behavior by temporally spacing out words at random output from `print()` (T/F flag)|
