@@ -147,8 +147,7 @@ def phrase_to_ngram(phrase, max_ngram=3):
 
 def extract_slots_semantic(utterance, threshold=0.7):
     text = utterance.lower()
-    words = phrase_to_ngram(text, 2)
-    print(words)
+    words = phrase_to_ngram(text, 1)
 
     slots = {}
 
@@ -184,4 +183,4 @@ if __name__ == "__main__":
     #        "I am looking for a fancy Italian restaurant in the north"
     #    )
     #)
-    print(extract_slots_semantic("I am looking for a high-end continental restaurant in the top of town"))
+    print(extract_slots_semantic("I am looking for a high-end continental restaurant in the uptown"))
