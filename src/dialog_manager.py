@@ -7,12 +7,12 @@ from src.run import run_str
 from src.enums.models import Models
 from src.enums.dialog_states import DialogState
 import src.enums.restaurant_props as rpe
-from src import PROGRAM, DESCRIPTION, MODEL_NAMES
+from src import PROGRAM, DESCRIPTION, MODEL_NAMES, MODEL_NAMES_DIALOG
 from src.utils import tts
 import src.utils.parser as upar
 from dataclasses import dataclass
 
-ALLOWED_MODELS = list(MODEL_NAMES.keys())
+ALLOWED_MODELS = list(MODEL_NAMES_DIALOG.keys())
 INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
 INTRO_PROMPT: str = "\nType QUIT to exit"  # Will never be read by TTS
 intro_agg: str = INTO_SENTENCE + INTRO_PROMPT
@@ -213,7 +213,7 @@ if __name__ == '__main__':
     model_name = kwargs['model']
     input_path = f'model_files/{model_name}.joblib'
 
-    model = MODEL_NAMES[model_name]
+    model = MODEL_NAMES_DIALOG[model_name]
 
     output_to_user(INTO_SENTENCE, kwargs['tts'])
     output_to_user(INTRO_PROMPT, do_tts=False)
