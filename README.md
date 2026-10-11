@@ -43,12 +43,12 @@ conda env update -f environment.yml
 
 ## Data Insertion
 
-The `dailog_acts.dat` (sic) file can be downloaded from [Brightspace](https://uu.brightspace.com/d2l/le/lessons/121884/topics/693121) and put into the [`data/`](data/) folder. 
+The `dailog_acts.dat` (sic) and `restaurant_info_extended.csv`  files need to be downloaded from [Brightspace](https://uu.brightspace.com/d2l/le/lessons/121884/topics/693121) and put into the [`data/`](data/) folder. 
 
 __***NOTE!!!***__
 The file is to be __RENAMED__ to `dialog_acts.dat` to fix a typo in the original file name. We recommend renaming it before putting it in the `data/` folder.
 
-## Usage
+## Utterance Classification
 
 ### Training
 
@@ -113,3 +113,15 @@ python -m src.run -m svm_bow -i model_files/svm_bow --interactive
 > You: What is the best Italian restaurant near me?
 > ['inform']
 ```
+
+## Dialog System
+This, of course is the meat and potatoes of the project. The dialog system can be used in the console with a simple command. Usage:
+```bash
+python -m src.dialog_manager.py --model <MODEL> [--tts] [--simllm]
+```
+
+| Argument |Description |
+|----------|-------------|
+| `--model` | The model to use for utterance classification. Can be one of `svm_bow`, `svm_bert`, `lr_bow`, `lr_bert`, or `rb` (with or without `_g` for a grouped split-trained model). The model also needs to be present as a .joblib file in the [`model_files/`](model_files) directory. |
+| `--tts` | Enable text-to-speech output (T/F flag) |
+| `--simllm` | Simulates GPT-like behavior by temporally spacing out words at random output from `print()` (T/F flag)|
