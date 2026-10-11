@@ -1,12 +1,13 @@
 from typing import Dict, Any, List, Tuple
 import argparse
+import re
 import sys
 import threading
 from src.dialog.slot_extraction import extract_slots_keyword, extract_slots_semantic, get_word_with_levenshtein_distance, is_dont_care
 from src.dialog import reasoning
 from src.enums.dialog_act import DialogAct
 from src.enums.match_type import MatchType
-from src.enums.restaurant_props import RestaurantInfoType
+from src.enums.restaurant_props import RestaurantInfoType, DETAIL_KEYWORDS
 from src.run import run_str
 from src.enums.models import Models
 from src.enums.dialog_states import DialogState
@@ -160,15 +161,8 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
             return DialogState.INFORM, offer_restaurant_suggestion(next_restaurant=True)
         
         if dialog_act == DialogAct.REQUEST:
-            # TODO: get better keywords instead of just phone and address
-            detail_type: RestaurantInfoType = None
-            if "phone" in utterance.lower() or "number" in utterance.lower():
-                detail_type = RestaurantInfoType.PHONE_NUMBER
-            elif "address" in utterance.lower() or "location" in utterance.lower():
-                detail_type = RestaurantInfoType.ADDRESS
+            return DialogState.INFORM, get_restaurant_details(detail_type=get_requested_detail_type(utterance))
 
-            return DialogState.INFORM, get_restaurant_details(detail_type=detail_type)
-        
         if dialog_act == DialogAct.RESTART:
             return DialogState.INTRODUCTION, intro_agg
 
@@ -177,11 +171,13 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
     return DialogState.END, "Thank you for using our restaurant recommendation system! Until next time :)"
 
 def get_requested_detail_type(utterance: str) -> RestaurantInfoType:
-    # TODO: get better keywords instead of just phone and address
-    if "phone" in utterance.lower() or "number" in utterance.lower():
-        return RestaurantInfoType.PHONE_NUMBER
-    if "address" in utterance.lower() or "location" in utterance.lower():
-        return RestaurantInfoType.ADDRESS
+    words = re.findall(r"\b\w+\b", utterance.lower())
+    keyword_to_detail = {keyword: detail_type for detail_type, keywords in DETAIL_KEYWORDS.items() for keyword in keywords}
+
+    for word in words:
+        if word in keyword_to_detail:
+            return keyword_to_detail[word]
+
     return None
 
 def handle_inform(new_preferences: Dict[rpe.StrEnum, str], fuzzy_matched: Dict[rpe.StrEnum, str] = None) -> Tuple[DialogState, str]:
@@ -259,16 +255,12 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
     return name + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
 
 def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[Dict[str, Any]]:
-    #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
     preferences_ = reasoning.reasoning(preferences).copy()
     pref_keys = list(preferences_.keys())
 
     for pref in pref_keys:
-        #print(pref, issubclass(pref, reasoning.REASONING_SLOTS))
         if issubclass(pref, reasoning.REASONING_SLOTS):
             del preferences_[pref]
-
-    #print(preferences_)
 
     pref_ = {k.__name__.lower(): v for k, v in preferences_.items()}
     rests = parser.fetch_resturant_by_info(rest_data, **pref_)
@@ -346,8 +338,6 @@ def extract_preferences(utterance: str, fuzzy_slots: List[rpe.StrEnum] = None) -
     candidate_slots = fuzzy_slots if fuzzy_slots is not None else list(slots)
     missing_slots = [slot_type for slot_type in candidate_slots if slot_type not in preferences]
 
-    #print(utterance, fuzzy_slots, fuzzy_preferences, missing_slots, sep=' | ')
-
     if not missing_slots or match_type is None:
 
         return preferences, fuzzy_preferences
@@ -379,14 +369,6 @@ def extract_preferences(utterance: str, fuzzy_slots: List[rpe.StrEnum] = None) -
                 fuzzy_preferences[slot_type] = semantic_slots[slot_type]
 
     return preferences, fuzzy_preferences
-    # elif match_type == MatchType.SEMANTIC_EMBEDDINGS:
-    #     semantic_slots = extract_slots_semantic(utterance)
-    #     for slot_type in missing_slots:
-    #         if slot_type in semantic_slots:
-    #             fuzzy_preferences[slot_type] = semantic_slots[slot_type]
-
-
-
 
 def classify(model: Models, input_path: str, utterance: str) -> DialogAct:
     return DialogAct(run_str(model=model, input_path=input_path, phrases=[utterance])[0])
@@ -430,7 +412,6 @@ if __name__ == '__main__':
             break
 
         dialog_act: DialogAct = classify(model, input_path, user_input)
-        print(f"dialog act: {dialog_act.name}")
         state, system_utterance = state_transition(state, dialog_act, user_input)
         
         output_to_user(system_utterance, kwargs['tts'])

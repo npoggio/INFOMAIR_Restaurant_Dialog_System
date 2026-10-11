@@ -91,7 +91,7 @@ def get_word_with_levenshtein_distance(mismatched_keyword, possible_values=None,
     for value in possible_values:
         distance = Levenshtein.distance(
             mismatched_keyword.lower(),
-            value.value.lower()
+            str(value).lower()
         )
 
         if distance < lowest_distance:
@@ -115,7 +115,7 @@ def find_semantic_match(text, possible_values, threshold=0.7):
     possible_values = list(possible_values)
 
     # Convert enum values to strings
-    value_texts = [value.value for value in possible_values]
+    value_texts = [str(value) for value in possible_values]
 
     texts = [text] + value_texts
 
