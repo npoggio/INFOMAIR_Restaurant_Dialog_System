@@ -105,3 +105,9 @@ class Romantic(StrEnum):
 class RestaurantInfoType(StrEnum):
     PHONE_NUMBER = 'phone number'
     ADDRESS = 'address'
+
+
+DETAIL_KEYWORDS: dict[RestaurantInfoType, list[str]] = {
+    RestaurantInfoType.PHONE_NUMBER: ["phone", "telephone", "number", "call"],
+    RestaurantInfoType.ADDRESS:      ["address", "location", "street", "postcode", "where"],
+}
