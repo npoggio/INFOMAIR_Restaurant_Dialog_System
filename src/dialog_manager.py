@@ -255,9 +255,10 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
 
     if restaurant_index >= len(possible_restaurants):
         return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + ". Would you like to search for other options? "+ "Say no to finish, or yes to start again."
-    return possible_restaurants[restaurant_index] + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
+    name = possible_restaurants[restaurant_index]['restaurantname'].title()
+    return name + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
 
-def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
+def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[Dict[str, Any]]:
     #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
     preferences_ = reasoning.reasoning(preferences).copy()
     pref_keys = list(preferences_.keys())
