@@ -87,13 +87,13 @@ class Assigned_Seats(StrEnum):
     #YES_ = 'yes_'
     #NO_ = 'no_'
     YES = 'assigned'
-    NO = 'free'
+    NO = 'free seats'
 
 
 class Children(StrEnum):
     #YES_ = 'yes_'
     #NO_ = 'no_'
-    YES = 'child friendly'
+    YES = 'for children'
     NO = 'for adults'
 
 class Romantic(StrEnum):

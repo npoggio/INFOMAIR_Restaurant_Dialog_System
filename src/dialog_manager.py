@@ -199,10 +199,17 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
 def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[str]:
     #return ["McDonald's", "Burger King"]  # TODO: use Jesse's restaurant finder
     print(preferences)
-    preferences_ = reasoning.reasoning(preferences)
+    preferences_ = reasoning.reasoning(preferences).copy()
+    pref_keys = list(preferences_.keys())
+
+    for pref in pref_keys:
+        print(pref, issubclass(pref, reasoning.REASONING_SLOTS))
+        if issubclass(pref, reasoning.REASONING_SLOTS):
+            del preferences_[pref]
+
+    print(preferences_)
 
     pref_ = {k.__name__.lower(): v for k, v in preferences_.items()}
-    print(pref_)
     rests = parser.fetch_resturant_by_info(rest_data, **pref_)
     return [r.title() for r in rests['restaurantname'].to_list()]
 

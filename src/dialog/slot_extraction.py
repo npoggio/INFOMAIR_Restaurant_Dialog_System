@@ -52,23 +52,28 @@ def extract_slots_keyword(utterance):
 
     slots = {}
 
+    for slot in EXTRACTABLE_SLOTS:
+        for option in slot:
+            if contains_keyword(text, option.value):
+                slots[slot] = option
+    
     # Food slot
-    for food in Food:
-        if contains_keyword(text, food.value):
-            slots[Food] = food
-            break
-
-    # Price slot
-    for price in PriceRange:
-        if contains_keyword(text, price.value):
-            slots[PriceRange] = price
-            break
-
-    # Area slot
-    for area in Area:
-        if contains_keyword(text, area.value):
-            slots[Area] = area
-            break
+    #for food in Food:
+    #    if contains_keyword(text, food.value):
+    #        slots[Food] = food
+    #        break
+    #
+    ## Price slot
+    #for price in PriceRange:
+    #    if contains_keyword(text, price.value):
+    #        slots[PriceRange] = price
+    #        break
+    #
+    ## Area slot
+    #for area in Area:
+    #    if contains_keyword(text, area.value):
+    #        slots[Area] = area
+    #        break
 
     return slots
 
