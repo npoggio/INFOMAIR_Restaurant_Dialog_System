@@ -1,6 +1,7 @@
 from typing import Dict, Any, List, Tuple
 import argparse
 import sys
+import threading
 from src.enums.dialog_act import DialogAct
 #from src.enums.info_request_type import InfoRequestType
 from src.run import run_str
@@ -201,7 +202,13 @@ def classify(model: Models, input_path: str, utterance: str) -> DialogAct:
 
 
 def output_to_user(system_utterance, do_tts):
-    print(f'System: {system_utterance}')
+    # For the GPT sim, it takes too long with TTS if they are not parallel. 
+    threading.Thread(
+        target=print,
+        args=(f'System: {system_utterance}',),
+        daemon=True,
+    ).start()
+
     if do_tts:
         tts.gen_and_play_tts(system_utterance)
 

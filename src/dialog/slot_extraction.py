@@ -7,7 +7,7 @@ from src.models.rule_based_baseline import contains_keyword
 from sklearn.metrics.pairwise import cosine_similarity
 from src.utils.distilbert_embeddings import get_distilbert_embeddings
 
-DATA_PATH = "data/restaurant_info.csv"
+DATA_PATH = "data/restaurant_info_extended.csv"
 
 
 # Used to collect all the different food types from restaurant_info.csv
