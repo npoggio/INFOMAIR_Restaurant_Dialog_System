@@ -7,7 +7,6 @@ from src.enums.dont_care import DontCare
 from src.models.rule_based_baseline import contains_keyword
 from sklearn.metrics.pairwise import cosine_similarity
 from src.utils.distilbert_embeddings import get_distilbert_embeddings
-import src.enums.restaurant_props as rpe
 
 DATA_PATH = "data/restaurant_info_extended.csv"
 
@@ -42,19 +41,19 @@ def extract_slots_keyword(utterance):
     # Food slot
     for food in Food:
         if contains_keyword(text, food.value):
-            slots[rpe.Food] = food.value
+            slots[Food] = food.value
             break
 
     # Price slot
     for price in PriceRange:
         if contains_keyword(text, price.value):
-            slots[rpe.PriceRange] = price.value
+            slots[PriceRange] = price.value
             break
 
     # Area slot
     for area in Area:
         if contains_keyword(text, area.value):
-            slots[rpe.Area] = area.value
+            slots[Area] = area.value
             break
 
     return slots
@@ -113,72 +112,76 @@ def find_semantic_match(text, possible_values, threshold=0.7):
         value_embeddings
     )[0]
 
+    #print('\n', text)
+    #print(*list(zip(possible_values, similarities)), sep='\n')
+
     best_index = similarities.argmax()
     best_similarity = similarities[best_index]
     best_value = possible_values[best_index]
 
     if best_similarity >= threshold:
-        return best_value.value
+        return best_value.value, best_similarity
 
-    return None
+    return None, 0
+
+
+EXTRACTABLE_SLOTS = [Food, PriceRange, Area]
+
+
+def phrase_to_ngram(phrase, max_ngram=3):
+    cleaned = re.sub(r"[^a-z0-9\s]", " ", phrase.lower())
+    tokens = re.findall(r"\b\w+\b", cleaned)
+
+    if not tokens:
+        return [phrase.lower()]
+
+    if len(tokens) < max_ngram:
+        return [" ".join(tokens)] if tokens else [phrase.lower()]
+
+    ngrams = []
+    for i in range(len(tokens) - 2):
+        ngrams.append(" ".join(tokens[i:i + max_ngram]))
+
+    return list(dict.fromkeys(ngrams))
 
 
 def extract_slots_semantic(utterance, threshold=0.7):
     text = utterance.lower()
-    words = re.findall(r"\b\w+\b", text)
+    words = phrase_to_ngram(text, 2)
+    print(words)
 
     slots = {}
 
-    # Food
-    for word in words:
-        match = find_semantic_match(
-            word,
-            Food,
-            threshold
-        )
+    for slot in EXTRACTABLE_SLOTS:
+        match, best_match, best_score = None, None, 0 
+        for word in words:
+            match, score = find_semantic_match(
+                word,
+                slot,
+                threshold
+            )
+
+            if score > best_score:
+                best_match, best_score = match, score
 
         if match is not None:
-            slots[rpe.Food] = match
-            break
-
-    # Price
-    for word in words:
-        match = find_semantic_match(
-            word,
-            PriceRange,
-            threshold
-        )
-
-        if match is not None:
-            slots[rpe.PriceRange] = match
-            break
-
-    # Area
-    for word in words:
-        match = find_semantic_match(
-            word,
-            Area,
-            threshold
-        )
-
-        if match is not None:
-            slots[rpe.Area] = match
-            break
+            slots[slot] = best_match
 
     return slots
 
 
 if __name__ == "__main__":
-    print(
-        extract_slots_keyword(
-            "I am looking for an expensive Italian restaurant in the north"
-        )
-    )
-
-    print(get_word_with_levenshtein_distance("exxpensive"))
-
-    print(
-        extract_slots_semantic(
-            "I am looking for a fancy Italian restaurant in the north"
-        )
-    )
+    #print(
+    #    extract_slots_keyword(
+    #        "I am looking for an expensive Italian restaurant in the north"
+    #    )
+    #)
+    #
+    #print(get_word_with_levenshtein_distance("exxpensive"))
+    #
+    #print(
+    #    extract_slots_semantic(
+    #        "I am looking for a fancy Italian restaurant in the north"
+    #    )
+    #)
+    print(extract_slots_semantic("I am looking for a high-end continental restaurant in the top of town"))

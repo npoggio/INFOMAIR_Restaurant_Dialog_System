@@ -4,7 +4,6 @@ import sys
 import threading
 from src.dialog.slot_extraction import extract_slots_keyword, extract_slots_semantic, get_word_with_levenshtein_distance, is_dont_care
 from src.enums.dialog_act import DialogAct
-#from src.enums.info_request_type import InfoRequestType
 from src.enums.match_type import MatchType
 from src.enums.restaurant_props import RestaurantInfoType
 from src.run import run_str
