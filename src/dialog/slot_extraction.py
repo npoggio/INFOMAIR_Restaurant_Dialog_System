@@ -3,9 +3,11 @@ import csv
 import Levenshtein
 
 from src.enums.restaurant_props import PriceRange, Area, Food
+from src.enums.dont_care import DontCare
 from src.models.rule_based_baseline import contains_keyword
 from sklearn.metrics.pairwise import cosine_similarity
 from src.utils.distilbert_embeddings import get_distilbert_embeddings
+import src.enums.restaurant_props as rpe
 
 DATA_PATH = "data/restaurant_info_extended.csv"
 
@@ -26,6 +28,11 @@ def get_food_types():
 FOOD_TYPES = get_food_types()
 
 
+def is_dont_care(utterance):
+    text = utterance.lower()
+    return any(re.search(rf"\b{re.escape(phrase.value)}", text) for phrase in DontCare)
+
+
 # 1. Keyword matching
 def extract_slots_keyword(utterance):
     text = utterance.lower()
@@ -35,30 +42,32 @@ def extract_slots_keyword(utterance):
     # Food slot
     for food in Food:
         if contains_keyword(text, food.value):
-            slots["food"] = food.value
+            slots[rpe.Food] = food.value
             break
 
     # Price slot
     for price in PriceRange:
         if contains_keyword(text, price.value):
-            slots["pricerange"] = price.value
+            slots[rpe.PriceRange] = price.value
             break
 
     # Area slot
     for area in Area:
         if contains_keyword(text, area.value):
-            slots["area"] = area.value
+            slots[rpe.Area] = area.value
             break
 
     return slots
 
 
 # 2. Levenshtein distance
-def levenshtein_distance(mismatched_keyword):
-    possible_values = list(PriceRange) + list(Area) + list(Food)
+def get_word_with_levenshtein_distance(mismatched_keyword, possible_values=None, max_distance=None):
+    if possible_values is None:
+        possible_values = list(PriceRange) + list(Area) + list(Food)
 
     closest_match = None
     lowest_distance = float("inf")
+    is_tie = False
 
     for value in possible_values:
         distance = Levenshtein.distance(
@@ -69,8 +78,17 @@ def levenshtein_distance(mismatched_keyword):
         if distance < lowest_distance:
             lowest_distance = distance
             closest_match = value
+            is_tie = False
+        elif distance == lowest_distance:
+            is_tie = True
 
-    return f"Did you mean {closest_match.value}?"
+    if max_distance is not None and lowest_distance > max_distance:
+        return None
+
+    if is_tie:
+        return None
+
+    return closest_match.value
 
 
 # 3. Semantic similarity via DistilBERT embeddings
@@ -120,7 +138,7 @@ def extract_slots_semantic(utterance, threshold=0.7):
         )
 
         if match is not None:
-            slots["food"] = match
+            slots[rpe.Food] = match
             break
 
     # Price
@@ -132,7 +150,7 @@ def extract_slots_semantic(utterance, threshold=0.7):
         )
 
         if match is not None:
-            slots["pricerange"] = match
+            slots[rpe.PriceRange] = match
             break
 
     # Area
@@ -144,7 +162,7 @@ def extract_slots_semantic(utterance, threshold=0.7):
         )
 
         if match is not None:
-            slots["area"] = match
+            slots[rpe.Area] = match
             break
 
     return slots
@@ -157,7 +175,7 @@ if __name__ == "__main__":
         )
     )
 
-    print(levenshtein_distance("exxpensive"))
+    print(get_word_with_levenshtein_distance("exxpensive"))
 
     print(
         extract_slots_semantic(
