@@ -6,37 +6,31 @@ We were told not to use notebooks for this project. However to create the graphs
 
 ## Environment Setup
 
-Create the Mamba environment in the MiniForge Prompt using:
+Create the Conda environment in the MiniForge Prompt using:
 
 ```bash
-mamba env create -f environment.yml
+conda env create -f environment.yml
 ```
 
 Activate the environment:
 
 ```bash
-mamba activate infomair
-```
-
-If that doesn't work you might need to allow the console to run mamba commands with 
-
-```bash
-mamba shell init --shell powershell --root-prefix=~/.local/share/mamba
+conda activate infomair
 ```
 
 To deactivate the environment:
 
 ```bash
-mamba deactivate
+conda deactivate
 ```
 
 
 ## Updating the Environment
 
-When adding a new dependency, install it with Mamba:
+When adding a new dependency, install it with Conda:
 
 ```bash
-mamba install <package-name>
+conda install <package-name>
 ```
 
 Then add the package to the `dependencies` section of `environment.yml` and commit the change.
@@ -44,17 +38,17 @@ Then add the package to the `dependencies` section of `environment.yml` and comm
 After pulling an updated `environment.yml`, update your existing environment with:
 
 ```bash
-mamba env update -f environment.yml
+conda env update -f environment.yml
 ```
 
 ## Data Insertion
 
-The `dailog_acts.dat` (sic) file can be downloaded from [Brightspace](https://uu.brightspace.com/d2l/le/lessons/121884/topics/693121) and put into the [`data/`](data/) folder. 
+The `dailog_acts.dat` (sic) and `restaurant_info_extended.csv`  files need to be downloaded from [Brightspace](https://uu.brightspace.com/d2l/le/lessons/121884/topics/693121) and put into the [`data/`](data/) folder. 
 
 __***NOTE!!!***__
 The file is to be __RENAMED__ to `dialog_acts.dat` to fix a typo in the original file name. We recommend renaming it before putting it in the `data/` folder.
 
-## Usage
+## Utterance Classification
 
 ### Training
 
@@ -80,6 +74,11 @@ You can use the models with your phrases by running the following command, where
 python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best Italian place in my neighbourhood?"
 > ['request']
 ```
+Generally -i is not needed for the rule-based model, as it does not require a trained model file. The command for the rule-based model is as follows:
+```bash
+python -m src.run -m rb -p "Where is the best Italian place in my neighbourhood?"
+> ['request']
+```
 
 You can also pass multiple sentences to the model, and it will return a list of predictions for each sentence.
 
@@ -91,15 +90,20 @@ python -m src.run -m svm_bow -i model_files/svm_bow.joblib -p "Where is the best
 Alternatively, you can pass a file with phrases to the model, and it will return a list of predictions for each phrase in the file. The input file should be a .txt file with one phrase per line. Or a .dat file, which can be evaluated too. 
 
 ```bash
-python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/example_phrases.txt
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -d data/example_phrases.txt
 > ['hello', 'inform']
 ```
 
-An accuracy report can be generated for a .dat file with the `--evaluate` flag, which will output a report per class and write to the `model_files/` directory. The report will also be printed to the console.
+An accuracy report can be generated for a .dat file with the `--evaluate` flag, which will output a report per class and write to the `model_files/` directory. The report will also be printed to the console. Note that `-i` has to be specified with a directory or model file that the evaluation json file will be saved in, and `-d` has to be specified with the .dat file.
 
 ```bash
-python -m src.run -m svm_bow -i model_files/svm_bow.joblib -f data/dialog_acts.dat --evaluate
+python -m src.run -m svm_bow -i model_files/svm_bow.joblib -d data/dialog_acts.dat --evaluate
 ```
+When you want to only use a part of the dataset provided you can specify a test-split (`--test_split`), split seed (`--tts_seed`) and whether to use a grouped split (`-g`) or not. The following command will use 15% of the dataset for testing, with a random seed of 12345 and a grouped split.:
+```bash
+python -m src.run -m rb -i model_files/rb_ --evaluate -d data/dialog_acts.dat --test_split 0.15 --tts_seed 12345 -g
+```
+
 
 Lastly, you can also have an interactive console where you can type in phrases and get predictions for each phrase. The console will exit when you type `exit` or `quit`. 
 
@@ -109,3 +113,16 @@ python -m src.run -m svm_bow -i model_files/svm_bow --interactive
 > You: What is the best Italian restaurant near me?
 > ['inform']
 ```
+
+## Dialog System
+This, of course is the meat and potatoes of the project. The dialog system can be used in the console with a simple command. Usage:
+```bash
+python -m src.dialog_manager.py --model <MODEL> [--tts] [--simllm]
+```
+
+| Argument |Description |
+|----------|-------------|
+| `--model` | The model to use for utterance classification. Can be one of `svm_bow`, `svm_bert`, `lr_bow`, `lr_bert`, or `rb` (with or without `_g` for a grouped split-trained model). The model also needs to be present as a .joblib file in the [`model_files/`](model_files) directory. |
+| `--match_type` | The type of matching to use for restaurant recommendations. Can be `levenshtein` or `semantic_embeddings`. We recommend using `levenshtein` for better results. |
+| `--tts` | Enable text-to-speech output (T/F flag) |
+| `--simllm` | Simulates GPT-like behavior by temporally spacing out words at random output from `print()` (T/F flag)|

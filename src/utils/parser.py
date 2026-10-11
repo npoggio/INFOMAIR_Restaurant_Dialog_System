@@ -1,5 +1,14 @@
 """A module to write parsers in that will be used to read .dat files"""
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Iterable
+from src.enums.restaurant_props import (
+    PriceRange, Area, Food, Food_Quality, 
+    Crowdedness, Length_Of_Stay, Not_Food )
+import enum
+import numpy as np
+import sys
+import time
+import pandas as pd
+import inspect
 
 TEXTUAL_FILE_TYPES = '.txt', '.dat'
 
@@ -94,14 +103,109 @@ def parse_dstc_dat_file(dat_lines: List[str],
     return pairs        
 
 
+def load_restaurant_data(file_path: str) -> pd.DataFrame:
+    return pd.read_csv(file_path)
+
+
+def fetch_resturant_by_info(
+        _restaurant_info: pd.DataFrame,
+        restaurantname: Optional[str] = None,
+        pricerange: Optional[PriceRange|Iterable[PriceRange]] = None,
+        area: Optional[Area|Iterable[Area]] = None,
+        food: Optional[Food|Iterable[Food]] = None,
+        phone: Optional[str] = None,
+        addr: Optional[str] = None,
+        postcode: Optional[str] = None,
+        food_quality: Optional[Food_Quality|Iterable[Food_Quality]] = None,
+        crowdedness: Optional[Crowdedness|Iterable[Crowdedness]] = None,
+        length_of_stay: Optional[Length_Of_Stay|Iterable[Length_Of_Stay]] = None,
+        not_food: Optional[Not_Food|Iterable[Not_Food]] = None):
+    """
+    Fetch the restaurants with the corresponding values, 
+    a list can be passed into the slots to indicate multiple options (OR)
+    """
+    arguments = locals()
+
+    for colname, filtervalue in arguments.items():
+        # Skip not-wanted values
+        if colname.startswith('_'): continue
+        if filtervalue is None: continue
+
+        colname = colname.replace('_', ' ')
+
+        # When a list is passed you can pass multiple values
+        if isinstance(filtervalue, Iterable) and not isinstance(filtervalue, (enum.Enum, str)):
+            if not colname.startswith('not '):
+                mask = _restaurant_info[colname].isin(filtervalue)
+            else:
+                colname = colname.removeprefix('not ')
+                mask = ~_restaurant_info[colname].isin(filtervalue)
+        else:
+            if not colname.startswith('not '):
+                mask = _restaurant_info[colname] == filtervalue
+            else:
+                colname = colname.removeprefix('not ')
+                mask = _restaurant_info[colname] != filtervalue
+
+        _restaurant_info = _restaurant_info[mask]
+
+    return _restaurant_info
+
+
+def enable_gpt_like_typing():
+    avg = 0.15
+    std = 0.15
+    splitchar = ' '
+
+    def gpt_like_typing(*args, sep=' ', end='\n'):
+        texts = [str(arg) for arg in args]
+        joined_text = sep.join(texts)
+        split_text = joined_text.split(splitchar)
+
+        random_duration = np.maximum(0.1, np.random.normal(avg, std, len(split_text)))
+        
+        for part, wait_time in zip(split_text, random_duration):
+            sys.stdout.write(str(part) + splitchar)
+            sys.stdout.flush()
+            time.sleep(wait_time)
+
+        sys.stdout.write(end)
+
+    global print
+    print = gpt_like_typing
+    return gpt_like_typing
+
+
+
 # For testing, wil only run when this module is called upon specifically
 if __name__ == '__main__':
-    file_path: str = 'data/dialog_acts.dat'
-    n_lines: int = 5
+    file_path: str = 'data/restaurant_info_extended.csv'
+    rest_data = load_restaurant_data(file_path)
+    restaurants = fetch_resturant_by_info(
+        rest_data,
+        restaurantname = None,
+        pricerange = PriceRange.MODERATE,
+        area = Area.WEST,
+        food = None,
+        postcode = None,
+        food_quality = None,
+        crowdedness = Crowdedness.BUSY,
+        length_of_stay = Length_Of_Stay.LONG,
+        not_food = Not_Food.ROMANIAN
+    )
 
-    dat_lines: List[str] = read_text_file_lines(file_path=file_path)
-    print(*dat_lines[:n_lines], sep='\n')
+    #for col in rd:
+    #    print("========", col)
+    #    uq = rd[col].unique()
+    #    print(*[f"{str(u).upper().replace(' ', '_')} = {repr(str(u))}" for u in uq], sep='\n')
 
-    verbose: bool = True
-    parsed_dat_file = parse_dstc_dat_file(dat_lines=dat_lines)
-    print(*parsed_dat_file[:n_lines], sep='\n')
+
+    #file_path: str = 'data/dialog_acts.dat'
+    #n_lines: int = 5
+
+    #dat_lines: List[str] = read_text_file_lines(file_path=file_path)
+    #print(*dat_lines[:n_lines], sep='\n')
+
+    #verbose: bool = True
+    #parsed_dat_file = parse_dstc_dat_file(dat_lines=dat_lines)
+    #print(*parsed_dat_file[:n_lines], sep='\n')

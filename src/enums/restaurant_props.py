@@ -1,0 +1,113 @@
+from enum import StrEnum
+
+# The names of these enums matter and should not be changed as the restaurant
+# fetching logic depends on them for column names :)
+
+
+class PriceRange(StrEnum):
+    CHEAP = 'cheap'
+    MODERATE = 'moderate'
+    EXPENSIVE = 'expensive'
+
+
+class Area(StrEnum):
+    CENTRE = 'centre'
+    NORTH = 'north'
+    EAST = 'east'
+    SOUTH = 'south'
+    WEST = 'west'
+
+
+class Not_Food(StrEnum):
+    ROMANIAN = 'romanian'
+
+
+class Food(StrEnum):
+    BRITISH = 'british'
+    MODERN_EUROPEAN = 'modern european'
+    ITALIAN = 'italian'
+    ROMANIAN = 'romanian'
+    SEAFOOD = 'seafood'
+    CHINESE = 'chinese'
+    STEAKHOUSE = 'steakhouse'
+    ASIAN_ORIENTAL = 'asian oriental'
+    FRENCH = 'french'
+    PORTUGUESE = 'portuguese'
+    INDIAN = 'indian'
+    SPANISH = 'spanish'
+    EUROPEAN = 'european'
+    VIETNAMESE = 'vietnamese'
+    KOREAN = 'korean'
+    THAI = 'thai'
+    MOROCCAN = 'moroccan'
+    SWISS = 'swiss'
+    FUSION = 'fusion'
+    GASTROPUB = 'gastropub'
+    TUSCAN = 'tuscan'
+    INTERNATIONAL = 'international'
+    TRADITIONAL = 'traditional'
+    MEDITERRANEAN = 'mediterranean'
+    POLYNESIAN = 'polynesian'
+    AFRICAN = 'african'
+    TURKISH = 'turkish'
+    BISTRO = 'bistro'
+    NORTH_AMERICAN = 'north american'
+    AUSTRALASIAN = 'australasian'
+    PERSIAN = 'persian'
+    JAMAICAN = 'jamaican'
+    LEBANESE = 'lebanese'
+    CUBAN = 'cuban'
+    JAPANESE = 'japanese'
+    CATALAN = 'catalan'
+
+
+class Food_Quality(StrEnum):
+    GOOD = 'good'
+    MEDIOCRE = 'mediocre'
+
+
+class Crowdedness(StrEnum):
+    NOT_BUSY = 'not busy'
+    BUSY = 'busy'
+
+
+class Length_Of_Stay(StrEnum):
+    LONG = 'long'
+    SHORT = 'short'
+
+
+class Touristic(StrEnum):
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'touristic'
+    NO = 'local'
+
+
+class Assigned_Seats(StrEnum):
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'assigned'
+    NO = 'free seats'
+
+
+class Children(StrEnum):
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'children'
+    NO = 'adults'
+
+class Romantic(StrEnum):
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'romantic'
+    NO = 'practical'
+
+class RestaurantInfoType(StrEnum):
+    PHONE_NUMBER = 'phone number'
+    ADDRESS = 'address'
+
+
+DETAIL_KEYWORDS: dict[RestaurantInfoType, list[str]] = {
+    RestaurantInfoType.PHONE_NUMBER: ["phone", "telephone", "number", "call"],
+    RestaurantInfoType.ADDRESS:      ["address", "location", "street", "postcode", "where"],
+}

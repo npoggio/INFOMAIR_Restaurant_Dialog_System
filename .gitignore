@@ -223,4 +223,5 @@ __marimo__/
 .vscode/settings.json
 *.joblib
 model_files/bert_cache/*
+model_files/tts_cache/*
 model_files/*.json

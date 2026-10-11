@@ -1,24 +1,37 @@
 from typing import Optional
-from transformers import DistilBertTokenizer, DistilBertModel
+from functools import lru_cache
 from sklearn.feature_extraction.text import CountVectorizer
 from typing import List
+from transformers import DistilBertTokenizer, DistilBertModel
 
 import numpy as np
-import torch
 
+BERT_LOADED: bool = False
+tokenizer: DistilBertTokenizer
+model: DistilBertModel
 
-tokenizer = DistilBertTokenizer.from_pretrained(
-    "distilbert-base-uncased",
-    cache_dir='model_files/bert_cache/'
-)
+@lru_cache(maxsize=None)
+def load_model():
+    global BERT_LOADED
+    BERT_LOADED = True
 
-model = DistilBertModel.from_pretrained(
-    "distilbert-base-uncased",
-    cache_dir='model_files/bert_cache/'
-)
+    global tokenizer
+    global model
 
-# Do not use dropout while creating embeddings.
-model.eval()
+    tokenizer = DistilBertTokenizer.from_pretrained(
+        "distilbert-base-uncased",
+        cache_dir='model_files/bert_cache/'
+    )
+
+    model = DistilBertModel.from_pretrained(
+        "distilbert-base-uncased",
+        cache_dir='model_files/bert_cache/'
+    )
+
+    # Do not use dropout while creating embeddings.
+    model.eval()
+
+    return tokenizer, model
 
 
 def get_distilbert_embeddings(
@@ -32,12 +45,18 @@ def get_distilbert_embeddings(
     can be used in exactly the same place as `get_embeddings` in the models created in model map.
     the only thing that needs to be copied at the top of the document is; from src.utils.distilbert_embeddings import get_distilbert_embeddings
     """
+    # Avoid very long loading times when running a model
+    if not BERT_LOADED:
+        load_model()
+
     if isinstance(texts, str):
         raise TypeError(
             "Argument `texts` must be an iterable of str objects, not a str object"
         )
 
     _ = count_vectorizer
+
+    import torch
 
     encoded_input = tokenizer(
         texts,
