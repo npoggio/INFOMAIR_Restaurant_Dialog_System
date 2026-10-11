@@ -27,6 +27,7 @@ LEVENSHTEIN_MIN_WORD_LENGTH: int = 4
 file_path: str = 'data/restaurant_info_extended.csv'
 rest_data = parser.load_restaurant_data(file_path)
 
+
 slots: Dict[rpe.StrEnum, Slot] = {
     rpe.Food:        Slot(question="What kind of food would you like?"),
     rpe.Area:        Slot(question="What part of town do you have in mind?"),

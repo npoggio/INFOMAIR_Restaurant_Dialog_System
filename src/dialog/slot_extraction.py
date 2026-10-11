@@ -9,7 +9,21 @@ from sklearn.metrics.pairwise import cosine_similarity
 from src.utils.distilbert_embeddings import get_distilbert_embeddings
 import src.enums.restaurant_props as rpe
 
-DATA_PATH = "data/restaurant_info.csv"
+import os
+import logging
+
+# Hide Hugging Face download progress and informational warnings.
+os.environ["HF_HUB_DISABLE_PROGRESS_BARS"] = "1"
+logging.getLogger("huggingface_hub").setLevel(logging.ERROR)
+
+from transformers.utils import logging as transformers_logging
+
+transformers_logging.set_verbosity_error()
+transformers_logging.disable_progress_bar()
+
+from src.utils.distilbert_embeddings import get_distilbert_embeddings
+
+DATA_PATH = "restaurant_info.csv"
 
 
 # Used to collect all the different food types from restaurant_info.csv
