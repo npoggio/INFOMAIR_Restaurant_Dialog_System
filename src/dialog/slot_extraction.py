@@ -145,7 +145,7 @@ def phrase_to_ngram(phrase, max_ngram=3):
     return list(dict.fromkeys(ngrams))
 
 
-def extract_slots_semantic(utterance, threshold=0.7):
+def extract_slots_semantic(utterance, threshold=0.90):
     text = utterance.lower()
     words = phrase_to_ngram(text, 1)
 
@@ -165,7 +165,7 @@ def extract_slots_semantic(utterance, threshold=0.7):
 
         if match is not None:
             slots[slot] = best_match
-
+            
     return slots
 
 
