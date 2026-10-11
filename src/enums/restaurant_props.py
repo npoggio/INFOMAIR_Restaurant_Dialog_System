@@ -18,6 +18,10 @@ class Area(StrEnum):
     WEST = 'west'
 
 
+class Not_Food(StrEnum):
+    ROMANIAN = 'romanian'
+
+
 class Food(StrEnum):
     BRITISH = 'british'
     MODERN_EUROPEAN = 'modern european'
@@ -71,3 +75,33 @@ class Length_Of_Stay(StrEnum):
     LONG = 'long'
     SHORT = 'short'
 
+
+class Touristic(StrEnum):
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'touristic'
+    NO = 'local'
+
+
+class Assigned_Seats(StrEnum):
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'assigned'
+    NO = 'free seats'
+
+
+class Children(StrEnum):
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'for children'
+    NO = 'for adults'
+
+class Romantic(StrEnum):
+    #YES_ = 'yes_'
+    #NO_ = 'no_'
+    YES = 'romantic'
+    NO = 'practical'
+
+class RestaurantInfoType(StrEnum):
+    PHONE_NUMBER = 'phone number'
+    ADDRESS = 'address'

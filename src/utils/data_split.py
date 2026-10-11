@@ -1,20 +1,13 @@
 # data_split.py
 
 from collections import Counter, defaultdict
-from dataclasses import dataclass
 
 import numpy as np
 from sklearn.model_selection import train_test_split
 
+from src.data_classes.data_split import DataSplit
+
 MAX_SENTENCE_SHARE = 0.25
-
-
-@dataclass
-class DataSplit:
-    X_train: list
-    X_test: list
-    y_train: list
-    y_test: list
 
 
 def split_data(
