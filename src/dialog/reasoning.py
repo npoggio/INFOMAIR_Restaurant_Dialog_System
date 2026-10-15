@@ -1,4 +1,4 @@
-from typing import Dict, List, Iterable, Optional, Tuple
+from typing import Dict, List, Iterable, Optional, Tuple, Generator
 from enum import StrEnum
 from itertools import combinations
 from src import qra
@@ -70,7 +70,12 @@ __CONFLICTING_Q0 = "You mentioned you'd like a {confl_prefl} {confl_class} resta
 "another indicated preference of {confl_prefr}. Would you like a {confl_prefl} or {confl_prefr} restaurant?"
 _CONFLICTING_QR = "You mentioned you'd like {logic_prefl} and {logic_prefr} restaurant. However, this clashes in the form of {confl_class}. Would you like {prefl} or {prefr}"
 
-reasoning_slots_filter = lambda enum, slot: (issubclass(enum, REASONING_SLOTS)) and (str(slot.value) in (getattr(slot, 'YES'), getattr(slot, 'YES')))
+def reasoning_slots_filter(enum, slot):
+    slot_value = getattr(slot, 'value', slot)
+    return (
+        issubclass(enum, REASONING_SLOTS)
+        and str(slot_value) == str(getattr(enum, 'YES'))
+    )
 slot_extr = lambda e, _: qra(list(e))
 
 def ask_to_resolve_conflicting(conflicting_class, 
@@ -199,20 +204,15 @@ def reasoning_dialog_handler(slots: Dict[StrEnum, 'Slot'], reasoning_slots_out):
     return ask_to_resolve_conflicting_reasonings(conflicting_reasonings)
 
 
-# @TODO: ADD SLOT EXTRACTION!
-def reasoning(slots) -> Dict[StrEnum, str]:
+def reasoning_flow(slots: Dict[StrEnum, str]) -> Generator[str, str, Dict[StrEnum, str]]:
     slots = slots.copy()
     new_slots = {}
     reason_question_generator = reasoning_dialog_handler(slots, reasoning_slots_out=new_slots)
     slots_handled = set()
 
-    # The reason_question_generator is a generator
     for (slot, question) in reason_question_generator:
         slots_handled.add(slot)
-        print('System: ' + question + "\nYou: ", end='')
-        user_input = input() 
-
-        # @TODO: Do some slot extraction stuff bla bla bla
+        user_input = yield question
         new_slots[slot] = user_input
 
     for handled in slots_handled:
@@ -223,14 +223,22 @@ def reasoning(slots) -> Dict[StrEnum, str]:
     slots = slots | new_slots
 
     for (slot, question) in generic_question_generator:
-        print('System: ' + question + "\nYou:", end=' ')
-        user_input = input()
-        # @TODO: Do some slot extraction stuff bla bla bla
-        #slots[slot] = user_input
+        user_input = yield question
         slots[slot] = slot_extr(slot, user_input)
 
     return slots
-    
+
+
+def reasoning(slots) -> Dict[StrEnum, str]:
+    flow = reasoning_flow(slots)
+    try:
+        question = next(flow)
+        while True:
+            print('System: ' + question + "\nYou: ", end='')
+            question = flow.send(input())
+    except StopIteration as result:
+        return result.value
+
 
 if __name__ == '__main__':
     from src.dialog_manager import Slot

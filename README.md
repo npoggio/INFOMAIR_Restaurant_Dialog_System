@@ -128,7 +128,7 @@ Start the interactive Flask chat from the repository root:
 python -m src.web
 ```
 
-Then open `http://127.0.0.1:5000` in your browser. Save a participant code before chatting; it and the conversation are written to a dedicated file in `logs/`. Choose a dialog model, slot-matching method, and an opaque configuration code in the chat header. The assigned task is shown in a separate side panel, not in the chat. Start a fresh conversation at any time with the reset button.
+Then open `http://127.0.0.1:1738` in your browser. Save a participant code before chatting; it and the conversation are written to a dedicated file in `logs/`. Choose a dialog model, slot-matching method, and an opaque configuration code in the chat header. The assigned task is shown in a separate side panel, not in the chat. Start a fresh conversation at any time with the reset button.
 
 For a persistent Flask session key outside local development, set the `FLASK_SECRET_KEY` environment variable before starting the server.
 

@@ -1,4 +1,4 @@
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Generator
 from dataclasses import dataclass
 import argparse
 import re
@@ -67,6 +67,8 @@ class WebDialogSession:
     pending_confirmations: Dict[rpe.StrEnum, str]
     possible_restaurants: List[Dict[str, Any]]
     restaurant_index: int = 0
+    reasoning_flow: Generator[str, str, Dict[rpe.StrEnum, str]] | None = None
+    reasoning_prompt: str | None = None
 
 
 _web_dialog_lock = threading.RLock()
@@ -105,12 +107,27 @@ def process_web_message(
             restaurant_index = conversation.restaurant_index
             match_type = selected_match_type
 
-            model = MODEL_NAMES_DIALOG[model_name]
-            input_path = f"model_files/{model_name}.joblib"
-            dialog_act = classify(model, input_path, utterance)
-            conversation.state, response = state_transition(
-                conversation.state, dialog_act, utterance
-            )
+            if conversation.reasoning_flow is not None:
+                try:
+                    conversation.reasoning_prompt = conversation.reasoning_flow.send(utterance)
+                    response = conversation.reasoning_prompt
+                except StopIteration as result:
+                    conversation.reasoning_flow = None
+                    conversation.reasoning_prompt = None
+                    response = offer_restaurant_suggestion(
+                        web_session=conversation,
+                        resolved_preferences=result.value,
+                    )
+            else:
+                model = MODEL_NAMES_DIALOG[model_name]
+                input_path = f"model_files/{model_name}.joblib"
+                dialog_act = classify(model, input_path, utterance)
+                conversation.state, response = state_transition(
+                    conversation.state,
+                    dialog_act,
+                    utterance,
+                    web_session=conversation,
+                )
 
             conversation.slots = slots
             conversation.pending_confirmations = pending_confirmations
@@ -171,7 +188,12 @@ def dialog_arg_parser() -> Dict[str, Any]:
     return namesp_d
 
 
-def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) -> Tuple[DialogState, str]:
+def state_transition(
+    state: DialogState,
+    dialog_act: DialogAct,
+    utterance: str,
+    web_session: WebDialogSession | None = None,
+) -> Tuple[DialogState, str]:
     global restaurant_index
 
     # Handle restarting before processing any state or preferences.
@@ -209,7 +231,7 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
     # Repeatedly introduce and ask for user input until ther user provides us with more information.
     if state == DialogState.INTRODUCTION:
         if dialog_act == DialogAct.INFORM or new_preferences or fuzzy_matched:
-            return handle_inform(new_preferences, fuzzy_matched)
+            return handle_inform(new_preferences, fuzzy_matched, web_session)
         if dialog_act == DialogAct.HELLO:
             return DialogState.INTRODUCTION, INTO_SENTENCE
         if dialog_act == DialogAct.BYE:
@@ -218,12 +240,12 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
 
     if state == DialogState.ASK_PREFERENCES:
         if dialog_act == DialogAct.INFORM or new_preferences or fuzzy_matched:
-            return handle_inform(new_preferences, fuzzy_matched)
+            return handle_inform(new_preferences, fuzzy_matched, web_session)
         else:
             return DialogState.ASK_PREFERENCES, get_repromt_for_missing_slots()
 
     if state == DialogState.CONFIRM_SLOT:
-        return handle_slot_confirmation(dialog_act, utterance)
+        return handle_slot_confirmation(dialog_act, utterance, web_session)
     
     if state == DialogState.INFORM:
         # Allow the user to change preferences during recommendations.
@@ -231,7 +253,7 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
             utterance, fuzzy_slots=[]
         )
         if new_preferences:
-            return handle_inform(new_preferences, fuzzy_matched)
+            return handle_inform(new_preferences, fuzzy_matched, web_session)
         
         # if all options are exhausted give the opportunity to start over
         if restaurant_index >= len(possible_restaurants):
@@ -263,7 +285,9 @@ def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) 
             return DialogState.CONFIRM, "Great! I'll reserve that for you."
         
         if dialog_act == DialogAct.DENY or dialog_act == DialogAct.NEGATE:
-            return DialogState.INFORM, offer_restaurant_suggestion(next_restaurant=True)
+            return DialogState.INFORM, offer_restaurant_suggestion(
+                next_restaurant=True, web_session=web_session
+            )
         
         if dialog_act == DialogAct.REQUEST:
             return DialogState.INFORM, get_restaurant_details(detail_type=get_requested_detail_type(utterance))
@@ -285,7 +309,11 @@ def get_requested_detail_type(utterance: str) -> RestaurantInfoType:
 
     return None
 
-def handle_inform(new_preferences: Dict[rpe.StrEnum, str], fuzzy_matched: Dict[rpe.StrEnum, str] = None) -> Tuple[DialogState, str]:
+def handle_inform(
+    new_preferences: Dict[rpe.StrEnum, str],
+    fuzzy_matched: Dict[rpe.StrEnum, str] = None,
+    web_session: WebDialogSession | None = None,
+) -> Tuple[DialogState, str]:
     """Stores every keyword-matched preference, overwriting any value that was already stored.
     Fuzzy-matched preferences are only stored after the user confirms them.
     Then asks for the next missing preference, or suggests a restaurant once all are known."""
@@ -301,9 +329,13 @@ def handle_inform(new_preferences: Dict[rpe.StrEnum, str], fuzzy_matched: Dict[r
     if pending_confirmations:
         return DialogState.CONFIRM_SLOT, confirmation_question()
 
-    return ask_next_preference_or_suggest()
+    return ask_next_preference_or_suggest(web_session)
 
-def handle_slot_confirmation(dialog_act: DialogAct, utterance: str) -> Tuple[DialogState, str]:
+def handle_slot_confirmation(
+    dialog_act: DialogAct,
+    utterance: str,
+    web_session: WebDialogSession | None = None,
+) -> Tuple[DialogState, str]:
     slot_type, value = next(iter(pending_confirmations.items()))
 
     if dialog_act in (DialogAct.AFFIRM, DialogAct.CONFIRM, DialogAct.ACK):
@@ -321,7 +353,7 @@ def handle_slot_confirmation(dialog_act: DialogAct, utterance: str) -> Tuple[Dia
 
     if pending_confirmations:
         return DialogState.CONFIRM_SLOT, confirmation_question()
-    return ask_next_preference_or_suggest()
+    return ask_next_preference_or_suggest(web_session)
 
 def confirmation_question() -> str:
     slot_type, value = next(iter(pending_confirmations.items()))
@@ -331,16 +363,22 @@ def confirmation_question() -> str:
         return f"Did you mean the {value} of town?"
     return f"Did you mean something {value}?"
 
-def ask_next_preference_or_suggest() -> Tuple[DialogState, str]:
+def ask_next_preference_or_suggest(
+    web_session: WebDialogSession | None = None,
+) -> Tuple[DialogState, str]:
     # Ask for the first preference we don't know yet
     missing_slot = next_missing_slot()
     if missing_slot:
         return DialogState.ASK_PREFERENCES, missing_slot.question
 
     # All preferences are known, so suggest a restaurant and let the user confirm it.
-    return DialogState.INFORM, offer_restaurant_suggestion()
+    return DialogState.INFORM, offer_restaurant_suggestion(web_session=web_session)
 
-def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
+def offer_restaurant_suggestion(
+    next_restaurant: bool = False,
+    web_session: WebDialogSession | None = None,
+    resolved_preferences: Dict[rpe.StrEnum, str] | None = None,
+) -> str:
     global possible_restaurants, restaurant_index
 
     preferences = {}
@@ -351,16 +389,39 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
     if next_restaurant:
         restaurant_index += 1
     else:
-        possible_restaurants = find_restaurants(preferences)
+        if resolved_preferences is not None:
+            possible_restaurants = _filter_restaurants(resolved_preferences)
+        else:
+            possible_restaurants = find_restaurants(preferences, web_session)
         restaurant_index = 0
+        if web_session is not None and web_session.reasoning_prompt is not None:
+            return web_session.reasoning_prompt
 
     if restaurant_index >= len(possible_restaurants):
         return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + " like that. Would you like to search for other options? "+ "Say no to finish, or yes to start again."
     name = possible_restaurants[restaurant_index]['restaurantname'].title()
     return name + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
 
-def find_restaurants(preferences: Dict[rpe.StrEnum, str]) -> List[Dict[str, Any]]:
-    preferences_ = reasoning.reasoning(preferences).copy()
+def find_restaurants(
+    preferences: Dict[rpe.StrEnum, str],
+    web_session: WebDialogSession | None = None,
+) -> List[Dict[str, Any]]:
+    if web_session is None:
+        preferences_ = reasoning.reasoning(preferences).copy()
+    else:
+        flow = reasoning.reasoning_flow(preferences)
+        try:
+            web_session.reasoning_prompt = next(flow)
+        except StopIteration as result:
+            preferences_ = result.value
+        else:
+            web_session.reasoning_flow = flow
+            return []
+    return _filter_restaurants(preferences_)
+
+
+def _filter_restaurants(preferences_: Dict[rpe.StrEnum, str]) -> List[Dict[str, Any]]:
+    preferences_ = preferences_.copy()
     pref_keys = list(preferences_.keys())
 
     for pref in pref_keys:
