@@ -117,7 +117,7 @@ python -m src.run -m svm_bow -i model_files/svm_bow --interactive
 ## Dialog System
 This, of course is the meat and potatoes of the project. The dialog system can be used in the console with a simple command. Usage:
 ```bash
-python -m src.dialog_manager.py --model <MODEL> [--tts] [--simllm]
+python -m src.dialog_manager --model <MODEL> [--tts] [--simllm]
 ```
 
 | Argument |Description |

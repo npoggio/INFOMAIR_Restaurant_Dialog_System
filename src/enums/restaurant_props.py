@@ -87,7 +87,7 @@ class Assigned_Seats(StrEnum):
     #YES_ = 'yes_'
     #NO_ = 'no_'
     YES = 'assigned'
-    NO = 'free seats'
+    NO = 'free'
 
 
 class Children(StrEnum):
