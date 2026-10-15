@@ -94,9 +94,10 @@ def dialog_arg_parser() -> Dict[str, Any]:
             raise ValueError('Task choice must be one of: ' + ', '.join(task_choices))
 
         os.system('cls' if sys.platform == 'win32' else 'clear')
-        namesp_d['printstyle'] = ALLOWED_PRINT_STYLES[print_choice]
         sys.stdout.write('\n\n' + TASKS[task_choice] + '\n\n' + (30*'=') + '\n\n')
-
+        namesp_d['printstyle'] = ALLOWED_PRINT_STYLES[print_choice]
+        namesp_d['task_index'] = task_choice
+        namesp_d['task_value'] = TASKS[task_choice]
 
     return namesp_d
 
