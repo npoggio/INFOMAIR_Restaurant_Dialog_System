@@ -14,11 +14,14 @@ from src.enums.dialog_states import DialogState
 import src.enums.restaurant_props as rpe
 from src import PROGRAM, DESCRIPTION, MODEL_NAMES, MODEL_NAMES_DIALOG
 from src.utils import tts
+from src.utils import logger as logger_
 import src.utils.parser as parser
 from src.data_classes.slot import Slot, DONT_CARE
 from src.enums.restart import Restart
-    
 
+logger = logger_.Logger()
+
+ALLOWED_PRINT_STYLES = ['normal', 'delay', 'stream']
 ALLOWED_MODELS = list(MODEL_NAMES_DIALOG.keys())
 INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
 INTRO_PROMPT: str = "Type QUIT to exit"  # Will never be read by TTS
@@ -57,7 +60,7 @@ def dialog_arg_parser() -> Dict[str, Any]:
     parser.add_argument('-m', '--model',
                         type=str, required=True, help='Model types', choices=ALLOWED_MODELS)
     parser.add_argument('--tts', action='store_true',)
-    parser.add_argument('--simllm', action='store_true')
+    parser.add_argument('-p', '--printstyle', type=str, choices=ALLOWED_PRINT_STYLES, default=ALLOWED_PRINT_STYLES[0])
     parser.add_argument('--match_type', type=MatchType, choices=list(MatchType), default=None,
                         help='Fallback slot matching when keyword matching fails')
 
@@ -250,7 +253,7 @@ def offer_restaurant_suggestion(next_restaurant: bool = False) -> str:
         restaurant_index = 0
 
     if restaurant_index >= len(possible_restaurants):
-        return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + ". Would you like to search for other options? "+ "Say no to finish, or yes to start again."
+        return "Sorry, there are no more restaurants that are " + describe_restaurant(preferences) + " like that. Would you like to search for other options? "+ "Say no to finish, or yes to start again."
     name = possible_restaurants[restaurant_index]['restaurantname'].title()
     return name + " is " + describe_restaurant(preferences) + ". Does that sound good?" # TODO: dont use the users preferences to descirbe the restuarant. use the actual restaurant attributes
 
@@ -383,15 +386,23 @@ def output_to_user(system_utterance, do_tts):
             daemon=True,
         ).start()
 
+    logger.write_sys_msg(system_utterance)
     print(f'System: {system_utterance}')
 
 
 if __name__ == '__main__':
     kwargs = dialog_arg_parser()
+    logger.write_parameters(str(list(kwargs.items())))
+    
     if kwargs['tts']:
         tts.load_pipeline()
-    if kwargs['simllm']:
-        print = parser.enable_gpt_like_typing()
+    match kwargs['printstyle']:
+        case 'normal':
+            print = print
+        case 'delay': 
+            print = parser.enable_delayed_typing()
+        case 'stream':
+            print = parser.enable_stream_typing()
 
     model_name = kwargs['model']
     input_path = f'model_files/{model_name}.joblib'
@@ -405,14 +416,17 @@ if __name__ == '__main__':
     state = DialogState.INTRODUCTION
 
     while True:
-        print("You:", end=' ') # To fix the llmsim 
+        end = ' ' if (not kwargs['printstyle'] == 'stream') else ''
+        print("You:", end=end) # To fix the llmsim 
         user_input = input("")
+        logger.write_user_msg(user_input)
 
         if user_input == 'QUIT':
             break
 
         dialog_act: DialogAct = classify(model, input_path, user_input)
         state, system_utterance = state_transition(state, dialog_act, user_input)
+        
         
         output_to_user(system_utterance, kwargs['tts'])
 

@@ -12,6 +12,11 @@ import inspect
 
 TEXTUAL_FILE_TYPES = '.txt', '.dat'
 
+MIN_DELAY_S      = 0.10
+WORD_AVG_DELAY_S = 0.15
+WORD_STD_DELAY_S = 0.15
+WORD_SPLIT_CHAR  = ' '
+
 
 def read_text_file_lines(file_path: str) -> List[str]:
     """
@@ -152,20 +157,18 @@ def fetch_resturant_by_info(
     return _restaurant_info
 
 
-def enable_gpt_like_typing():
-    avg = 0.15
-    std = 0.15
-    splitchar = ' '
-
+def enable_stream_typing():
     def gpt_like_typing(*args, sep=' ', end='\n'):
         texts = [str(arg) for arg in args]
         joined_text = sep.join(texts)
-        split_text = joined_text.split(splitchar)
+        split_text = joined_text.split(WORD_SPLIT_CHAR)
 
-        random_duration = np.maximum(0.1, np.random.normal(avg, std, len(split_text)))
+        random_duration = np.maximum(
+            MIN_DELAY_S,
+            np.random.normal(WORD_AVG_DELAY_S, WORD_STD_DELAY_S, len(split_text)))
         
         for part, wait_time in zip(split_text, random_duration):
-            sys.stdout.write(str(part) + splitchar)
+            sys.stdout.write(str(part) + WORD_SPLIT_CHAR)
             sys.stdout.flush()
             time.sleep(wait_time)
 
@@ -175,6 +178,26 @@ def enable_gpt_like_typing():
     print = gpt_like_typing
     return gpt_like_typing
 
+
+def enable_delayed_typing():
+    def delayed_typing(*args, sep=' ', end='\n'):
+        texts = [str(arg) for arg in args]
+        joined_text = sep.join(texts)
+        split_text = joined_text.split(WORD_SPLIT_CHAR)
+
+        random_duration = np.maximum(
+            MIN_DELAY_S,
+            np.random.normal(WORD_AVG_DELAY_S, WORD_STD_DELAY_S, len(split_text)))
+        wait_time = sum(random_duration)
+
+        time.sleep(wait_time)
+        sys.stdout.write(joined_text)
+        sys.stdout.write(end)
+        sys.stdout.flush()
+
+    global print
+    print = delayed_typing
+    return delayed_typing
 
 
 # For testing, wil only run when this module is called upon specifically
