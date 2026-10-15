@@ -49,7 +49,7 @@ for _style_index, _style in enumerate(ALLOWED_PRINT_STYLES, start=1):
 
 
 def _new_conversation(
-    model_name: str = "rb",
+    model_name: str = "svm_bow",
     match_type: MatchType = MatchType.LEVENSHTEIN,
     config: str = "1a",
     participant_code: str | None = None,
