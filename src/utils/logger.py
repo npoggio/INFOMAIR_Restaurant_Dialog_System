@@ -1,5 +1,4 @@
 from datetime import datetime
-import time
 from enum import StrEnum, auto
 
 NOW = lambda: datetime.now().strftime('%d/%m/%Y %H:%M:%S')
@@ -23,6 +22,7 @@ class Logger:
     def __write(self, cause: str, msg: str):
         formatted_msg = f'[{NOW()}] <{str(cause).upper()}> {msg}\n'
         self.writer.write(formatted_msg)
+        self.writer.flush()
 
 
 if __name__ == '__main__':

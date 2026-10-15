@@ -128,9 +128,13 @@ Start the interactive Flask chat from the repository root:
 python -m src.web
 ```
 
-Then open `http://127.0.0.1:5000` in your browser. Choose a dialog model and slot-matching method in the chat header, and start a new conversation at any time with the reset button. The **System output** menu supports normal (immediate), delayed (wait, then display), and stream (word-by-word) output. Each browser session has its own conversation state.
+Then open `http://127.0.0.1:5000` in your browser. Save a participant code before chatting; it and the conversation are written to a dedicated file in `logs/`. Choose a dialog model, slot-matching method, and an opaque configuration code in the chat header. The assigned task is shown in a separate side panel, not in the chat. Start a fresh conversation at any time with the reset button.
 
 For a persistent Flask session key outside local development, set the `FLASK_SECRET_KEY` environment variable before starting the server.
+
+### Sharing with VS Code port forwarding
+
+The web server listens on `0.0.0.0:5000` so it can be reached through a forwarded port. Start it as above, open the **Ports** panel in VS Code, and forward port `5000`. Use the forwarded address shown there as the link. To share it with people who cannot access your VS Code account, change the port visibility to **Public**; anyone with that public link may use the chat and submit participant codes. You can set a different listening port with the `PORT` environment variable and forward that port instead.
 
 | Argument |Description |
 |----------|-------------|
