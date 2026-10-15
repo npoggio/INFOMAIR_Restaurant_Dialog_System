@@ -2,6 +2,7 @@ from typing import Dict, Any, List, Tuple
 import argparse
 import re
 import sys
+import os
 import threading
 from src.dialog.slot_extraction import extract_slots_keyword, extract_slots_semantic, get_word_with_levenshtein_distance, is_dont_care
 from src.dialog import reasoning
@@ -16,12 +17,18 @@ from src import PROGRAM, DESCRIPTION, MODEL_NAMES, MODEL_NAMES_DIALOG
 from src.utils import tts
 from src.utils import logger as logger_
 import src.utils.parser as parser
+import json
 from src.data_classes.slot import Slot, DONT_CARE
 from src.enums.restart import Restart
 
 logger = logger_.Logger()
 
+TASKS_DOC = 'model_files/tasks/tasks.json'
 ALLOWED_PRINT_STYLES = ['normal', 'delay', 'stream']
+with open(TASKS_DOC) as file:
+    TASKS = json.load(file)
+
+ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 ALLOWED_MODELS = list(MODEL_NAMES_DIALOG.keys())
 INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
 INTRO_PROMPT: str = "Type QUIT to exit"  # Will never be read by TTS
@@ -63,10 +70,35 @@ def dialog_arg_parser() -> Dict[str, Any]:
     parser.add_argument('-p', '--printstyle', type=str, choices=ALLOWED_PRINT_STYLES, default=ALLOWED_PRINT_STYLES[0])
     parser.add_argument('--match_type', type=MatchType, choices=list(MatchType), default=None,
                         help='Fallback slot matching when keyword matching fails')
-
+    parser.add_argument('-c', '--config', type=str)
+    
     args = sys.argv[1:]
     namesp = parser.parse_args(args=args)
-    return namesp.__dict__
+    namesp_d = namesp.__dict__
+
+    config = namesp_d['config']
+
+    if config is not None:
+        if len(config) != 2:
+            raise ValueError('Config must be a number (1+) and a letter like: `1a`')
+
+        print_choice = int(config[0]) - 1
+        task_choice = ALPHABET.index(config[1].upper())
+
+        print_choices = list(range(1, len(ALLOWED_PRINT_STYLES)+1))
+        task_choices = ALPHABET[:len(TASKS)]
+
+        if (print_choice < 0) or print_choice >= len(ALLOWED_PRINT_STYLES):
+            raise ValueError('Print choice must be one of: ' + str(print_choices))
+        if task_choice >= len(TASKS):
+            raise ValueError('Task choice must be one of: ' + ', '.join(task_choices))
+
+        os.system('cls' if sys.platform == 'win32' else 'clear')
+        namesp_d['printstyle'] = ALLOWED_PRINT_STYLES[print_choice]
+        sys.stdout.write('\n\n' + TASKS[task_choice] + '\n\n' + (30*'=') + '\n\n')
+
+
+    return namesp_d
 
 
 def state_transition(state: DialogState, dialog_act: DialogAct, utterance: str) -> Tuple[DialogState, str]:

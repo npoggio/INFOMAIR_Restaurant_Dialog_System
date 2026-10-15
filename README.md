@@ -117,7 +117,7 @@ python -m src.run -m svm_bow -i model_files/svm_bow --interactive
 ## Dialog System
 This, of course is the meat and potatoes of the project. The dialog system can be used in the console with a simple command. Usage:
 ```bash
-python -m src.dialog_manager --model <MODEL> [--tts] [--simllm]
+python -m src.dialog_manager --model <MODEL> --match_type <MATCH_TYPE> --printstyle <PRINT_STYLE> [--tts]
 ```
 
 | Argument |Description |
@@ -125,4 +125,12 @@ python -m src.dialog_manager --model <MODEL> [--tts] [--simllm]
 | `--model` | The model to use for utterance classification. Can be one of `svm_bow`, `svm_bert`, `lr_bow`, `lr_bert`, or `rb` (with or without `_g` for a grouped split-trained model). The model also needs to be present as a .joblib file in the [`model_files/`](model_files) directory. |
 | `--match_type` | The type of matching to use for restaurant recommendations. Can be `levenshtein` or `semantic_embeddings`. We recommend using `levenshtein` for better results. |
 | `--tts` | Enable text-to-speech output (T/F flag) |
-| `--simllm` | Simulates GPT-like behavior by temporally spacing out words at random output from `print()` (T/F flag)|
+| `--printstyle` | Whether to use normal printing (`normal`), delayed printing (`delay`) or simulated streaming (`stream`)|
+
+In experimentation you can use a configuration to quickly define `printstyle` and a task. The configuration can be set with the `--config` flag, and can be one of the following:
+
+| Print Style        | Task A | Task B | Task C |
+|--------------------|--------|--------|--------|
+| 1. Normal Printing | `1a`   | `1b`   | `1c`   |
+| 2. Delay Printing  | `2a`   | `2b`   | `2c`   |
+| 3. Stream Printing | `3a`   | `3b`   | `3c`   |
