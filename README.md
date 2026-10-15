@@ -120,6 +120,18 @@ This, of course is the meat and potatoes of the project. The dialog system can b
 python -m src.dialog_manager --model <MODEL> --match_type <MATCH_TYPE> --printstyle <PRINT_STYLE> [--tts]
 ```
 
+### Web interface
+
+Start the interactive Flask chat from the repository root:
+
+```bash
+python -m src.web
+```
+
+Then open `http://127.0.0.1:5000` in your browser. Choose a dialog model and slot-matching method in the chat header, and start a new conversation at any time with the reset button. The **System output** menu supports normal (immediate), delayed (wait, then display), and stream (word-by-word) output. Each browser session has its own conversation state.
+
+For a persistent Flask session key outside local development, set the `FLASK_SECRET_KEY` environment variable before starting the server.
+
 | Argument |Description |
 |----------|-------------|
 | `--model` | The model to use for utterance classification. Can be one of `svm_bow`, `svm_bert`, `lr_bow`, `lr_bert`, or `rb` (with or without `_g` for a grouped split-trained model). The model also needs to be present as a .joblib file in the [`model_files/`](model_files) directory. |

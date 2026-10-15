@@ -30,6 +30,7 @@ dependencies:
   - tk
   - tqdm
   - tzdata
+  - flask
   - wheel
   - pip:
       - absl-py==2.5.0

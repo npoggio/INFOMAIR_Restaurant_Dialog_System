@@ -1,4 +1,5 @@
 from typing import Dict, Any, List, Tuple
+from dataclasses import dataclass
 import argparse
 import re
 import sys
@@ -56,6 +57,74 @@ pending_confirmations: Dict[rpe.StrEnum, str] = {}
 # Restaurants matching the current preferences, and which one we are currently suggesting.
 possible_restaurants: List[Dict[str, Any]] = []
 restaurant_index: int = 0
+match_type: MatchType | None = None
+
+
+@dataclass
+class WebDialogSession:
+    state: DialogState
+    slots: Dict[rpe.StrEnum, Slot]
+    pending_confirmations: Dict[rpe.StrEnum, str]
+    possible_restaurants: List[Dict[str, Any]]
+    restaurant_index: int = 0
+
+
+_web_dialog_lock = threading.RLock()
+
+
+def create_web_dialog_session() -> WebDialogSession:
+    return WebDialogSession(
+        state=DialogState.INTRODUCTION,
+        slots={slot_type: Slot(question=slot.question) for slot_type, slot in slots.items()},
+        pending_confirmations={},
+        possible_restaurants=[],
+    )
+
+
+def process_web_message(
+    conversation: WebDialogSession,
+    model_name: str,
+    selected_match_type: MatchType,
+    utterance: str,
+) -> str:
+    """Run one web turn while isolating this conversation from the CLI and other sessions."""
+    global slots, pending_confirmations, possible_restaurants, restaurant_index, match_type
+
+    with _web_dialog_lock:
+        previous_context = (
+            slots,
+            pending_confirmations,
+            possible_restaurants,
+            restaurant_index,
+            match_type,
+        )
+        try:
+            slots = conversation.slots
+            pending_confirmations = conversation.pending_confirmations
+            possible_restaurants = conversation.possible_restaurants
+            restaurant_index = conversation.restaurant_index
+            match_type = selected_match_type
+
+            model = MODEL_NAMES_DIALOG[model_name]
+            input_path = f"model_files/{model_name}.joblib"
+            dialog_act = classify(model, input_path, utterance)
+            conversation.state, response = state_transition(
+                conversation.state, dialog_act, utterance
+            )
+
+            conversation.slots = slots
+            conversation.pending_confirmations = pending_confirmations
+            conversation.possible_restaurants = possible_restaurants
+            conversation.restaurant_index = restaurant_index
+            return response
+        finally:
+            (
+                slots,
+                pending_confirmations,
+                possible_restaurants,
+                restaurant_index,
+                match_type,
+            ) = previous_context
 
 def dialog_arg_parser() -> Dict[str, Any]:
     parser: argparse.ArgumentParser = argparse.ArgumentParser(
