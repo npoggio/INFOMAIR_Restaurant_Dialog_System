@@ -33,6 +33,7 @@ ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 ALLOWED_MODELS = list(MODEL_NAMES_DIALOG.keys())
 INTO_SENTENCE: str = "Hello, welcome to super cool restaurant recommendation system! You can ask for restaurants by area, price range or food type. How may I help you?"
 INTRO_PROMPT: str = "Type QUIT to exit"  # Will never be read by TTS
+CLASSIFICATION_ERROR_RESPONSE: str = "That is not possible."
 intro_agg: str = INTO_SENTENCE + INTRO_PROMPT
 
 LEVENSHTEIN_MAX_DISTANCE: int = 2
@@ -121,7 +122,13 @@ def process_web_message(
             else:
                 model = MODEL_NAMES_DIALOG[model_name]
                 input_path = f"model_files/{model_name}.joblib"
-                dialog_act = classify(model, input_path, utterance)
+                try:
+                    dialog_act = classify(model, input_path, utterance)
+                except Exception as error:
+                    logger.write_sys_msg(
+                        f"Dialog-act classification failed: {type(error).__name__}: {error}"
+                    )
+                    return CLASSIFICATION_ERROR_RESPONSE
                 conversation.state, response = state_transition(
                     conversation.state,
                     dialog_act,
@@ -587,7 +594,14 @@ if __name__ == '__main__':
         if user_input == 'QUIT':
             break
 
-        dialog_act: DialogAct = classify(model, input_path, user_input)
+        try:
+            dialog_act: DialogAct = classify(model, input_path, user_input)
+        except Exception as error:
+            logger.write_sys_msg(
+                f"Dialog-act classification failed: {type(error).__name__}: {error}"
+            )
+            output_to_user(CLASSIFICATION_ERROR_RESPONSE, kwargs['tts'])
+            continue
         state, system_utterance = state_transition(state, dialog_act, user_input)
         
         
