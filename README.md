@@ -150,3 +150,5 @@ In experimentation you can use a configuration to quickly define `printstyle` an
 | 1. Normal Printing | `1a`   | `1b`   | `1c`   |
 | 2. Delay Printing  | `2a`   | `2b`   | `2c`   |
 | 3. Stream Printing | `3a`   | `3b`   | `3c`   |
+
+"You would like to go to a restaurant with your loud, screaming children and don't want to walk a very long way with the stroller.\nAs you live in the north of town, please find a local, practical British restaurant there your kids will like (they won't).\nAnd keep the price moderate, as you don't want to ruin little Timmy's birthday dinner but are also on a tight budget!\nPlease look for restaurants with reserved seating, as you need a child seat."

@@ -81,7 +81,7 @@
     <div class="workspace">
       <aside class="task-panel" aria-labelledby="task-heading">
         <h2 id="task-heading">Your task</h2>
-        <div id="task-prompt">{{ task_value }}</div>
+        <div id="task-prompt"></div>
       </aside>
       <section class="chat-panel" aria-label="Chat">
         <section id="messages" aria-live="polite" aria-label="Conversation"></section>
@@ -104,6 +104,31 @@
     const participantStatus = document.querySelector("#participant-status");
     const taskPrompt = document.querySelector("#task-prompt");
     let settingsUpdate = Promise.resolve();
+
+    function renderTaskPrompt(text) {
+      taskPrompt.replaceChildren();
+      const parents = [taskPrompt];
+      const boldTag = /<\/?b>/g;
+      let lastIndex = 0;
+      let match;
+
+      while ((match = boldTag.exec(text)) !== null) {
+        const currentParent = parents[parents.length - 1];
+        currentParent.append(document.createTextNode(text.slice(lastIndex, match.index)));
+        if (match[0] === "<b>") {
+          const bold = document.createElement("b");
+          currentParent.append(bold);
+          parents.push(bold);
+        } else if (parents.length > 1) {
+          parents.pop();
+        } else {
+          currentParent.append(document.createTextNode(match[0]));
+        }
+        lastIndex = boldTag.lastIndex;
+      }
+
+      parents[parents.length - 1].append(document.createTextNode(text.slice(lastIndex)));
+    }
 
     function addMessage(text, kind = "system") {
       const message = document.createElement("div");
@@ -186,7 +211,7 @@
       };
       settingsUpdate = settingsUpdate.then(async () => {
         const result = await postJson("/api/settings", settings);
-        if (result.task_value) taskPrompt.textContent = result.task_value;
+        if (result.task_value) renderTaskPrompt(result.task_value);
       }).catch((error) => addMessage(error.message, "error"));
       return settingsUpdate;
     }
@@ -215,13 +240,14 @@
         const result = await postJson("/api/reset");
         messages.replaceChildren();
         addMessage(result.greeting);
-        taskPrompt.textContent = result.task_value;
+        renderTaskPrompt(result.task_value);
       } catch (error) {
         addMessage(error.message, "error");
       }
       input.focus();
     });
 
+    renderTaskPrompt({{ task_value|tojson }});
     addMessage({{ greeting|tojson }});
     sendButton.disabled = !participantCodeInput.readOnly;
     input.focus();
