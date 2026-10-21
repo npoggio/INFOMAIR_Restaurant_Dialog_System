@@ -600,6 +600,7 @@ if __name__ == '__main__':
             logger.write_sys_msg(
                 f"Dialog-act classification failed: {type(error).__name__}: {error}"
             )
+            print(error.with_traceback())
             output_to_user(CLASSIFICATION_ERROR_RESPONSE, kwargs['tts'])
             continue
         state, system_utterance = state_transition(state, dialog_act, user_input)

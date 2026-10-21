@@ -161,7 +161,7 @@ You have a date with your crush; please find a <b>local</b>, <b>romantic</b> <b>
 
 "You and a friend are on holiday in Cambridge. You'd both really like to sample the local cuisine.\nSo, seek a practical, local Indian restaurant near your hotel in the west of town.\nAs you don't want to incur roaming costs dialing a restaurant, you want a restaurant with free seating.\nYou don't care about the price or child-friendliness of the staff."
 
-You're on holiday; find a <b>local</b>, <b>practical</b> <b>Indian</b> restaurant in the <b>west</b> of town. Make sure it has <b>free seating</b>.
+You're on holiday; find a <b>local</b>, <b>practical</b> <b>Indian</b> restaurant in the <b>west</b> of town. Make sure it has <b>free seating</b>. You <b><b>don't care about the price</b></b> or whether it's a restaurant for <b><b>adults or children</b></b>
 
 ---
 
